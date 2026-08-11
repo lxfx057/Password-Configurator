@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#000000" />
   <meta
     name="description"
-    content="Generatore password con file cifrato compatibile con PC, iPhone e Android."
+    content="Create strong passwords and save them in an encrypted file."
   />
   <title>Password File</title>
   <link rel="stylesheet" href="./style.css" />
@@ -19,52 +19,48 @@
         <span class="brand-icon">⌘</span>
         <span>Password File</span>
       </a>
-
-      <button class="header-button" id="openFileButton" type="button">
-        Apri file
-      </button>
     </header>
 
     <section class="hero">
-      <p class="eyebrow">OFFLINE · FILE CIFRATO</p>
-      <h1>Genera. Salva.<br />Porta con te.</h1>
+      <p class="eyebrow">PRIVATE · ENCRYPTED FILE</p>
+      <h1>Create secure<br />passwords easily.</h1>
       <p>
-        Le tue password vengono salvate solo in un file cifrato,
-        protetto dalla password che scegli tu.
+        Generate passwords, keep the ones you need, then download one
+        password-protected encrypted file.
       </p>
     </section>
 
     <section class="panel">
       <div class="panel-header">
         <div>
-          <p class="section-label">GENERA</p>
-          <h2>Nuova password</h2>
+          <p class="section-label">PASSWORD GENERATOR</p>
+          <h2>Create a password</h2>
         </div>
 
         <button class="button button-secondary" id="regenerateButton" type="button">
-          Rigenera
+          Generate again
         </button>
       </div>
 
       <div class="password-output-box">
         <output id="generatedPassword" class="generated-password" aria-live="polite">
-          Caricamento…
+          Loading…
         </output>
 
         <div class="output-actions">
           <button class="small-button" id="copyGeneratedButton" type="button">
-            Copia
+            Copy
           </button>
 
           <button class="small-button" id="showGeneratedButton" type="button">
-            Nascondi
+            Hide
           </button>
         </div>
       </div>
 
       <div class="strength-card">
         <div class="strength-top">
-          <span>Robustezza</span>
+          <span>Strength</span>
           <strong id="strengthLabel">—</strong>
         </div>
 
@@ -72,27 +68,27 @@
           <span id="strengthBar"></span>
         </div>
 
-        <p id="strengthDescription">Generazione password in corso.</p>
+        <p id="strengthDescription">Your password strength will appear here.</p>
       </div>
 
       <div class="preset-row">
         <button class="preset active" type="button" data-preset="balanced">
-          Bilanciata
+          Balanced
         </button>
 
         <button class="preset" type="button" data-preset="easy">
-          Facile da digitare
+          Easy to type
         </button>
 
         <button class="preset" type="button" data-preset="strong">
-          Molto sicura
+          Very strong
         </button>
       </div>
 
       <div class="settings-grid">
         <div class="setting-card full-width">
           <div class="setting-heading">
-            <label for="lengthRange">Lunghezza</label>
+            <label for="lengthRange">Length</label>
             <output id="lengthValue">20</output>
           </div>
 
@@ -100,137 +96,128 @@
         </div>
 
         <div class="setting-card">
-          <p class="setting-title">Caratteri</p>
+          <p class="setting-title">Characters</p>
 
           <label class="toggle-row">
-            <span>Maiuscole</span>
+            <span>Uppercase letters</span>
             <input id="uppercaseToggle" type="checkbox" checked />
             <span class="switch"></span>
           </label>
 
           <label class="toggle-row">
-            <span>Minuscole</span>
+            <span>Lowercase letters</span>
             <input id="lowercaseToggle" type="checkbox" checked />
             <span class="switch"></span>
           </label>
 
           <label class="toggle-row">
-            <span>Numeri</span>
+            <span>Numbers</span>
             <input id="numbersToggle" type="checkbox" checked />
             <span class="switch"></span>
           </label>
 
           <label class="toggle-row">
-            <span>Simboli</span>
+            <span>Symbols</span>
             <input id="symbolsToggle" type="checkbox" checked />
             <span class="switch"></span>
           </label>
         </div>
 
         <div class="setting-card">
-          <p class="setting-title">Compatibilità</p>
+          <p class="setting-title">Compatibility</p>
 
           <label class="toggle-row">
-            <span>Evita caratteri simili</span>
+            <span>Avoid similar characters</span>
             <input id="ambiguousToggle" type="checkbox" checked />
             <span class="switch"></span>
           </label>
 
           <label class="toggle-row">
-            <span>Inizia con una lettera</span>
+            <span>Start with a letter</span>
             <input id="startLetterToggle" type="checkbox" />
             <span class="switch"></span>
           </label>
 
           <label class="field-label" for="excludeInput">
-            Escludi caratteri
+            Exclude characters
           </label>
 
           <input
             id="excludeInput"
             type="text"
-            placeholder="Esempio: @#%"
+            placeholder="Example: @#%"
             autocomplete="off"
             maxlength="40"
           />
         </div>
       </div>
+
+      <button class="button button-primary add-generated-button" id="addPasswordButton" type="button">
+        Save this password
+      </button>
     </section>
 
     <section class="panel file-panel">
       <div class="panel-header">
         <div>
-          <p class="section-label">FILE PERSONALE</p>
-          <h2>Archivio password</h2>
+          <p class="section-label">YOUR PASSWORD LIST</p>
+          <h2>Saved passwords</h2>
         </div>
 
-        <span class="file-state" id="fileState">Nessun file aperto</span>
+        <span class="file-state" id="entryCount">0 saved</span>
       </div>
 
-      <p class="file-description" id="fileDescription">
-        Aggiungi le password che vuoi e scarica un file cifrato. Per leggerlo
-        di nuovo basta caricarlo qui e inserire la stessa password.
+      <p class="file-description">
+        Add passwords to the list, then protect them with a password and
+        download one encrypted file.
       </p>
 
-      <div class="file-actions">
-        <button class="button button-primary" id="addPasswordButton" type="button">
-          Aggiungi password generata
-        </button>
-
-        <button class="button button-secondary" id="addManualButton" type="button">
-          Aggiungi manualmente
-        </button>
-      </div>
+      <button class="button button-secondary add-manual-button" id="addManualButton" type="button">
+        Add a password manually
+      </button>
 
       <div class="password-list" id="passwordList"></div>
 
       <button class="button button-primary download-button" id="downloadFileButton" type="button">
-        Crea e scarica file cifrato
+        Save encrypted file
       </button>
 
       <p class="file-note">
-        Il file non contiene password leggibili. Conserva con cura la password
-        del file: non può essere recuperata.
+        Your file password is never stored. If you lose it, the encrypted file
+        cannot be opened.
       </p>
     </section>
 
-    <input
-      id="openFileInput"
-      type="file"
-      accept=".pconf,application/json"
-      hidden
-    />
-
     <footer>
-      Funziona nel browser: nessun account, nessun server, nessun dato inviato.
+      No account. No server storage. Your data stays in your browser until you download it.
     </footer>
   </main>
 
   <dialog class="dialog" id="passwordDialog">
     <form id="passwordForm">
-      <button class="dialog-close" id="closePasswordDialog" type="button" aria-label="Chiudi">
+      <button class="dialog-close" id="closePasswordDialog" type="button" aria-label="Close">
         ×
       </button>
 
-      <p class="section-label">PASSWORD</p>
-      <h2 id="passwordDialogTitle">Aggiungi password</h2>
+      <p class="section-label">PASSWORD DETAILS</p>
+      <h2 id="passwordDialogTitle">Save password</h2>
 
       <input id="entryIdInput" type="hidden" />
 
-      <label for="serviceInput">Nome servizio</label>
+      <label for="serviceInput">Website or app</label>
       <input
         id="serviceInput"
         type="text"
-        placeholder="Esempio: Instagram"
+        placeholder="Example: Instagram"
         autocomplete="off"
         required
       />
 
-      <label for="usernameInput">Username o email</label>
+      <label for="usernameInput">Username or email</label>
       <input
         id="usernameInput"
         type="text"
-        placeholder="nome@email.com"
+        placeholder="name@email.com"
         autocomplete="username"
       />
 
@@ -244,20 +231,20 @@
         />
 
         <button class="show-field-button" id="showEntryPasswordButton" type="button">
-          Mostra
+          Show
         </button>
       </div>
 
-      <label for="notesInput">Note</label>
-      <textarea id="notesInput" rows="3" placeholder="Opzionale"></textarea>
+      <label for="notesInput">Notes</label>
+      <textarea id="notesInput" rows="3" placeholder="Optional"></textarea>
 
       <div class="dialog-actions">
         <button class="button button-secondary" id="cancelPasswordButton" type="button">
-          Annulla
+          Cancel
         </button>
 
         <button class="button button-primary" type="submit">
-          Salva
+          Save password
         </button>
       </div>
     </form>
@@ -265,19 +252,18 @@
 
   <dialog class="dialog" id="encryptDialog">
     <form id="encryptForm">
-      <button class="dialog-close" id="closeEncryptDialog" type="button" aria-label="Chiudi">
+      <button class="dialog-close" id="closeEncryptDialog" type="button" aria-label="Close">
         ×
       </button>
 
-      <p class="section-label">PROTEGGI IL FILE</p>
-      <h2>Crea password file</h2>
+      <p class="section-label">ENCRYPT YOUR FILE</p>
+      <h2>Choose a file password</h2>
 
       <p class="dialog-description">
-        Questa password protegge il file scaricato. Non viene salvata nel sito
-        e non può essere recuperata.
+        This password locks your downloaded file. It is never saved or sent anywhere.
       </p>
 
-      <label for="filePasswordInput">Password del file</label>
+      <label for="filePasswordInput">File password</label>
       <input
         id="filePasswordInput"
         type="password"
@@ -286,7 +272,7 @@
         required
       />
 
-      <label for="confirmFilePasswordInput">Conferma password del file</label>
+      <label for="confirmFilePasswordInput">Confirm file password</label>
       <input
         id="confirmFilePasswordInput"
         type="password"
@@ -298,49 +284,20 @@
       <p class="form-error hidden" id="encryptError"></p>
 
       <button class="button button-primary dialog-submit" type="submit">
-        Scarica file cifrato
-      </button>
-    </form>
-  </dialog>
-
-  <dialog class="dialog" id="unlockDialog">
-    <form id="unlockForm">
-      <button class="dialog-close" id="closeUnlockDialog" type="button" aria-label="Chiudi">
-        ×
-      </button>
-
-      <p class="section-label">APRI FILE</p>
-      <h2>Sblocca archivio</h2>
-
-      <p class="dialog-description" id="selectedFileName">
-        Inserisci la password usata quando hai creato questo file.
-      </p>
-
-      <label for="unlockPasswordInput">Password del file</label>
-      <input
-        id="unlockPasswordInput"
-        type="password"
-        autocomplete="current-password"
-        required
-      />
-
-      <p class="form-error hidden" id="unlockError"></p>
-
-      <button class="button button-primary dialog-submit" type="submit">
-        Apri file
+        Download encrypted file
       </button>
     </form>
   </dialog>
 
   <dialog class="dialog dialog-small" id="confirmDialog">
     <form method="dialog">
-      <h2 id="confirmDialogTitle">Conferma</h2>
+      <h2 id="confirmDialogTitle">Confirm action</h2>
       <p class="dialog-description" id="confirmDialogText"></p>
 
       <div class="dialog-actions">
-        <button class="button button-secondary" value="cancel">Annulla</button>
+        <button class="button button-secondary" value="cancel">Cancel</button>
         <button class="button button-danger" id="confirmDialogButton" value="confirm">
-          Elimina
+          Delete
         </button>
       </div>
     </form>
