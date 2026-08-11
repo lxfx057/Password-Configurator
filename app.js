@@ -12,7 +12,6 @@
     entries: [],
     generatedPassword: "",
     revealed: true,
-    openedFileName: "",
     pendingEncryptedFile: null
   };
 
@@ -84,17 +83,19 @@
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     toast.textContent = message;
-    ui.toastContainer.append(toast);
+    ui.toastContainer.appendChild(toast);
 
-    window.setTimeout(() => toast.remove(), 3300);
+    window.setTimeout(() => {
+      toast.remove();
+    }, 3300);
   }
 
   function bytesToBase64(bytes) {
     let binary = "";
 
-    bytes.forEach((byte) => {
-      binary += String.fromCharCode(byte);
-    });
+    for (let index = 0; index < bytes.length; index += 1) {
+      binary += String.fromCharCode(bytes[index]);
+    }
 
     return btoa(binary);
   }
@@ -127,15 +128,25 @@
     return byte[0] % maximum;
   }
 
-  function secureShuffle(characters) {
-    const output = [...characters];
-
-    for (let index = output.length - 1; index > 0; index -= 1) {
-      const target = randomIndex(index + 1);
-      [output[index], output[target]] = [output[target], output[index]];
+  function createId() {
+    if (typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
     }
 
-    return output;
+    return `${Date.now().toString(36)}-${bytesToBase64(randomBytes(12))
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(0, 16)}`;
+  }
+
+  function shuffle(values) {
+    const copy = [...values];
+
+    for (let index = copy.length - 1; index > 0; index -= 1) {
+      const target = randomIndex(index + 1);
+      [copy[index], copy[target]] = [copy[target], copy[index]];
+    }
+
+    return copy;
   }
 
   function removeExcluded(characters, excluded) {
@@ -171,7 +182,7 @@
     if (ui.numbersToggle.checked && numbers) groups.push(numbers);
     if (ui.symbolsToggle.checked && symbols) groups.push(symbols);
 
-    if (!groups.length) {
+    if (groups.length === 0) {
       showToast("Scegli almeno un tipo di carattere.", "error");
       return;
     }
@@ -194,12 +205,12 @@
       characters.push(pool[randomIndex(pool.length)]);
     }
 
-    const finalCharacters = secureShuffle(characters);
+    const finalCharacters = shuffle(characters);
 
     if (ui.startLetterToggle.checked) {
       const letters = `${lowercase}${uppercase}`;
 
-      if (letters) {
+      if (letters.length > 0) {
         finalCharacters[0] = letters[randomIndex(letters.length)];
       }
     }
@@ -210,28 +221,48 @@
   }
 
   function estimateStrength(password) {
-    let charset = 0;
+    let charsetSize = 0;
 
-    if (/[a-z]/.test(password)) charset += 26;
-    if (/[A-Z]/.test(password)) charset += 26;
-    if (/[0-9]/.test(password)) charset += 10;
-    if (/[^A-Za-z0-9]/.test(password)) charset += 30;
+    if (/[a-z]/.test(password)) charsetSize += 26;
+    if (/[A-Z]/.test(password)) charsetSize += 26;
+    if (/[0-9]/.test(password)) charsetSize += 10;
+    if (/[^A-Za-z0-9]/.test(password)) charsetSize += 30;
 
-    const bits = Math.round(password.length * Math.log2(charset || 1));
+    const bits = Math.round(password.length * Math.log2(charsetSize || 1));
 
     if (bits < 40) {
-      return ["Debole", 25, "#ff453a", "Aumenta la lunghezza o i tipi di carattere."];
+      return {
+        label: "Debole",
+        width: 25,
+        color: "#ff453a",
+        description: "Aumenta la lunghezza o aggiungi più tipi di carattere."
+      };
     }
 
     if (bits < 60) {
-      return ["Buona", 52, "#ff9f0a", "Adatta a molti account."];
+      return {
+        label: "Buona",
+        width: 52,
+        color: "#ff9f0a",
+        description: "Adatta alla maggior parte degli account."
+      };
     }
 
     if (bits < 80) {
-      return ["Forte", 76, "#ffd60a", "Una buona scelta per account importanti."];
+      return {
+        label: "Forte",
+        width: 76,
+        color: "#ffd60a",
+        description: "Ottima per gli account importanti."
+      };
     }
 
-    return ["Molto forte", 100, "#30d158", "Lunga, casuale e difficile da indovinare."];
+    return {
+      label: "Molto forte",
+      width: 100,
+      color: "#30d158",
+      description: "Lunga, casuale e difficile da indovinare."
+    };
   }
 
   function updatePasswordOutput() {
@@ -243,14 +274,12 @@
     ui.generatedPassword.classList.toggle("masked", !state.revealed);
     ui.showGeneratedButton.textContent = state.revealed ? "Nascondi" : "Mostra";
 
-    const [label, width, color, description] = estimateStrength(
-      state.generatedPassword
-    );
+    const strength = estimateStrength(state.generatedPassword);
 
-    ui.strengthLabel.textContent = label;
-    ui.strengthBar.style.width = `${width}%`;
-    ui.strengthBar.style.background = color;
-    ui.strengthDescription.textContent = description;
+    ui.strengthLabel.textContent = strength.label;
+    ui.strengthBar.style.width = `${strength.width}%`;
+    ui.strengthBar.style.background = strength.color;
+    ui.strengthDescription.textContent = strength.description;
   }
 
   function applyPreset(preset) {
@@ -301,7 +330,7 @@
         textarea.value = text;
         textarea.style.position = "fixed";
         textarea.style.opacity = "0";
-        document.body.append(textarea);
+        document.body.appendChild(textarea);
         textarea.select();
         document.execCommand("copy");
         textarea.remove();
@@ -330,7 +359,10 @@
         hash: "SHA-256"
       },
       sourceKey,
-      { name: "AES-GCM", length: 256 },
+      {
+        name: "AES-GCM",
+        length: 256
+      },
       false,
       ["encrypt", "decrypt"]
     );
@@ -342,17 +374,20 @@
     const iterations = 310000;
     const key = await deriveKey(password, salt, iterations);
 
-    const content = {
+    const plainArchive = {
       app: "Password File",
       version: 1,
       createdAt: new Date().toISOString(),
       entries
     };
 
-    const encrypted = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
+    const encryptedData = await crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv
+      },
       key,
-      encoder.encode(JSON.stringify(content))
+      encoder.encode(JSON.stringify(plainArchive))
     );
 
     return {
@@ -363,28 +398,29 @@
       iterations,
       salt,
       iv: bytesToBase64(iv),
-      data: bytesToBase64(new Uint8Array(encrypted))
+      data: bytesToBase64(new Uint8Array(encryptedData))
     };
   }
 
   async function decryptArchive(archive, password) {
-    const validArchive =
-      archive?.format === "Password File" &&
-      archive?.version === 1 &&
-      archive?.algorithm === "AES-256-GCM" &&
-      archive?.kdf === "PBKDF2-SHA-256" &&
-      archive?.salt &&
-      archive?.iv &&
-      archive?.data &&
-      Number.isInteger(archive?.iterations);
+    const isValid =
+      archive &&
+      archive.format === "Password File" &&
+      archive.version === 1 &&
+      archive.algorithm === "AES-256-GCM" &&
+      archive.kdf === "PBKDF2-SHA-256" &&
+      archive.salt &&
+      archive.iv &&
+      archive.data &&
+      Number.isInteger(archive.iterations);
 
-    if (!validArchive) {
+    if (!isValid) {
       throw new Error("Questo file non è un archivio Password File valido.");
     }
 
     const key = await deriveKey(password, archive.salt, archive.iterations);
 
-    const decrypted = await crypto.subtle.decrypt(
+    const decryptedData = await crypto.subtle.decrypt(
       {
         name: "AES-GCM",
         iv: base64ToBytes(archive.iv)
@@ -393,7 +429,7 @@
       base64ToBytes(archive.data)
     );
 
-    const content = JSON.parse(decoder.decode(decrypted));
+    const content = JSON.parse(decoder.decode(decryptedData));
 
     if (!Array.isArray(content.entries)) {
       throw new Error("Il contenuto dell'archivio non è valido.");
@@ -402,8 +438,17 @@
     return content.entries;
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   function renderEntries() {
-    if (!state.entries.length) {
+    if (state.entries.length === 0) {
       ui.passwordList.innerHTML = `
         <div class="empty-list">
           Nessuna password nell'archivio. Aggiungi una password generata oppure inseriscine una manualmente.
@@ -412,14 +457,19 @@
       return;
     }
 
-    ui.passwordList.innerHTML = state.entries
-      .sort((first, second) => first.service.localeCompare(second.service, "it"))
+    const sortedEntries = [...state.entries].sort((first, second) =>
+      first.service.localeCompare(second.service, "it")
+    );
+
+    ui.passwordList.innerHTML = sortedEntries
       .map(
         (entry) => `
           <article class="entry">
             <div>
               <div class="entry-name">${escapeHtml(entry.service)}</div>
-              <div class="entry-user">${escapeHtml(entry.username || "Nessun username")}</div>
+              <div class="entry-user">${escapeHtml(
+                entry.username || "Nessun username"
+              )}</div>
             </div>
 
             <div class="entry-actions">
@@ -433,39 +483,37 @@
       .join("");
   }
 
-  function escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function openPasswordDialog(entry = null, generated = false) {
+  function openPasswordDialog(entry = null, addGeneratedPassword = false) {
     ui.passwordForm.reset();
 
     ui.passwordDialogTitle.textContent = entry
       ? "Modifica password"
       : "Aggiungi password";
 
-    ui.entryIdInput.value = entry?.id || "";
-    ui.serviceInput.value = entry?.service || "";
-    ui.usernameInput.value = entry?.username || "";
-    ui.entryPasswordInput.value = entry?.password || (generated ? state.generatedPassword : "");
-    ui.notesInput.value = entry?.notes || "";
+    ui.entryIdInput.value = entry ? entry.id : "";
+    ui.serviceInput.value = entry ? entry.service : "";
+    ui.usernameInput.value = entry ? entry.username : "";
+    ui.entryPasswordInput.value = entry
+      ? entry.password
+      : addGeneratedPassword
+        ? state.generatedPassword
+        : "";
+    ui.notesInput.value = entry ? entry.notes : "";
+
     ui.entryPasswordInput.type = "password";
     ui.showEntryPasswordButton.textContent = "Mostra";
 
     ui.passwordDialog.showModal();
 
-    window.setTimeout(() => ui.serviceInput.focus(), 50);
+    window.setTimeout(() => {
+      ui.serviceInput.focus();
+    }, 50);
   }
 
   function saveEntry(event) {
     event.preventDefault();
 
-    const id = ui.entryIdInput.value || crypto.randomUUID();
+    const id = ui.entryIdInput.value || createId();
     const service = ui.serviceInput.value.trim();
     const username = ui.usernameInput.value.trim();
     const password = ui.entryPasswordInput.value;
@@ -476,8 +524,6 @@
       return;
     }
 
-    const existingIndex = state.entries.findIndex((entry) => entry.id === id);
-
     const entry = {
       id,
       service,
@@ -486,6 +532,8 @@
       notes,
       updatedAt: new Date().toISOString()
     };
+
+    const existingIndex = state.entries.findIndex((item) => item.id === id);
 
     if (existingIndex === -1) {
       state.entries.push(entry);
@@ -503,6 +551,7 @@
     ui.confirmDialogTitle.textContent = title;
     ui.confirmDialogText.textContent = text;
     ui.confirmDialogButton.textContent = actionText;
+
     ui.confirmDialog.showModal();
 
     return new Promise((resolve) => {
@@ -516,42 +565,42 @@
 
   async function deleteEntry(id) {
     const entry = state.entries.find((item) => item.id === id);
+
     if (!entry) return;
 
-    const accepted = await askConfirmation(
+    const confirmed = await askConfirmation(
       "Eliminare password?",
       `“${entry.service}” verrà eliminata dall'archivio corrente.`,
       "Elimina"
     );
 
-    if (!accepted) return;
+    if (!confirmed) return;
 
     state.entries = state.entries.filter((item) => item.id !== id);
     renderEntries();
     showToast("Password eliminata.", "success");
   }
 
-  function downloadTextFile(content, filename) {
-    const blob = new Blob([content], { type: "application/json" });
+  function downloadFile(text, filename) {
+    const blob = new Blob([text], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
 
     link.href = url;
     link.download = filename;
-    document.body.append(link);
+
+    document.body.appendChild(link);
     link.click();
     link.remove();
 
-    window.setTimeout(() => URL.revokeObjectURL(url), 500);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  function updateFileInformation(name = "") {
-    state.openedFileName = name;
-
+  function updateFileStatus(name = "") {
     if (name) {
       ui.fileState.textContent = "File aperto";
       ui.fileDescription.textContent =
-        `Stai modificando “${name}”. Quando scarichi di nuovo, usa la stessa password oppure scegline una nuova.`;
+        `Archivio “${name}” aperto. Dopo le modifiche, scarica nuovamente il file cifrato.`;
     } else {
       ui.fileState.textContent = "Nuovo archivio";
       ui.fileDescription.textContent =
@@ -560,7 +609,7 @@
   }
 
   function openEncryptDialog() {
-    if (!state.entries.length) {
+    if (state.entries.length === 0) {
       showToast("Aggiungi almeno una password prima di creare il file.", "error");
       return;
     }
@@ -570,10 +619,12 @@
     ui.encryptError.classList.add("hidden");
     ui.encryptDialog.showModal();
 
-    window.setTimeout(() => ui.filePasswordInput.focus(), 50);
+    window.setTimeout(() => {
+      ui.filePasswordInput.focus();
+    }, 50);
   }
 
-  async function downloadEncryptedArchive(event) {
+  async function createEncryptedFile(event) {
     event.preventDefault();
 
     const password = ui.filePasswordInput.value;
@@ -588,15 +639,15 @@
         throw new Error("Le due password non coincidono.");
       }
 
-      const encryptedArchive = await encryptArchive(state.entries, password);
+      const archive = await encryptArchive(state.entries, password);
 
-      downloadTextFile(
-        JSON.stringify(encryptedArchive),
+      downloadFile(
+        JSON.stringify(archive),
         `password-file-${new Date().toISOString().slice(0, 10)}.pconf`
       );
 
       ui.encryptDialog.close();
-      updateFileInformation("Archivio password");
+      updateFileStatus("Archivio password");
       showToast("File cifrato scaricato.", "success");
     } catch (error) {
       ui.encryptError.textContent =
@@ -605,12 +656,11 @@
     }
   }
 
-  async function selectArchiveFile(file) {
+  async function selectFile(file) {
     if (!file) return;
 
     try {
-      const content = await file.text();
-      state.pendingEncryptedFile = JSON.parse(content);
+      state.pendingEncryptedFile = JSON.parse(await file.text());
 
       ui.unlockForm.reset();
       ui.unlockError.textContent = "";
@@ -620,7 +670,9 @@
 
       ui.unlockDialog.showModal();
 
-      window.setTimeout(() => ui.unlockPasswordInput.focus(), 50);
+      window.setTimeout(() => {
+        ui.unlockPasswordInput.focus();
+      }, 50);
     } catch {
       showToast("Non riesco a leggere questo file.", "error");
     } finally {
@@ -628,7 +680,7 @@
     }
   }
 
-  async function unlockArchive(event) {
+  async function unlockFile(event) {
     event.preventDefault();
 
     try {
@@ -636,7 +688,7 @@
       state.entries = await decryptArchive(state.pendingEncryptedFile, password);
 
       ui.unlockDialog.close();
-      updateFileInformation("Archivio importato");
+      updateFileStatus("Archivio importato");
       renderEntries();
 
       showToast("File sbloccato e caricato.", "success");
@@ -678,7 +730,9 @@
     });
 
     document.querySelectorAll(".preset").forEach((button) => {
-      button.addEventListener("click", () => applyPreset(button.dataset.preset));
+      button.addEventListener("click", () => {
+        applyPreset(button.dataset.preset);
+      });
     });
 
     ui.addPasswordButton.addEventListener("click", () => {
@@ -699,8 +753,11 @@
 
     ui.showEntryPasswordButton.addEventListener("click", () => {
       const visible = ui.entryPasswordInput.type === "text";
+
       ui.entryPasswordInput.type = visible ? "password" : "text";
-      ui.showEntryPasswordButton.textContent = visible ? "Mostra" : "Nascondi";
+      ui.showEntryPasswordButton.textContent = visible
+        ? "Mostra"
+        : "Nascondi";
     });
 
     ui.passwordForm.addEventListener("submit", saveEntry);
@@ -712,12 +769,18 @@
 
       if (copyId) {
         const entry = state.entries.find((item) => item.id === copyId);
-        if (entry) copyToClipboard(entry.password, "Password copiata.");
+
+        if (entry) {
+          copyToClipboard(entry.password, "Password copiata.");
+        }
       }
 
       if (editId) {
         const entry = state.entries.find((item) => item.id === editId);
-        if (entry) openPasswordDialog(entry);
+
+        if (entry) {
+          openPasswordDialog(entry);
+        }
       }
 
       if (deleteId) {
@@ -726,29 +789,50 @@
     });
 
     ui.downloadFileButton.addEventListener("click", openEncryptDialog);
-    ui.closeEncryptDialog.addEventListener("click", () => ui.encryptDialog.close());
-    ui.encryptForm.addEventListener("submit", downloadEncryptedArchive);
 
-    ui.openFileButton.addEventListener("click", () => ui.openFileInput.click());
-    ui.openFileInput.addEventListener("change", (event) => {
-      selectArchiveFile(event.target.files[0]);
+    ui.closeEncryptDialog.addEventListener("click", () => {
+      ui.encryptDialog.close();
     });
 
-    ui.closeUnlockDialog.addEventListener("click", () => ui.unlockDialog.close());
-    ui.unlockForm.addEventListener("submit", unlockArchive);
+    ui.encryptForm.addEventListener("submit", createEncryptedFile);
+
+    ui.openFileButton.addEventListener("click", () => {
+      ui.openFileInput.click();
+    });
+
+    ui.openFileInput.addEventListener("change", (event) => {
+      selectFile(event.target.files[0]);
+    });
+
+    ui.closeUnlockDialog.addEventListener("click", () => {
+      ui.unlockDialog.close();
+    });
+
+    ui.unlockForm.addEventListener("submit", unlockFile);
+  }
+
+  function requiredElementsExist() {
+    return Object.values(ui).every((element) => element !== null);
   }
 
   function initialize() {
-    if (!window.crypto?.subtle) {
+    if (!requiredElementsExist()) {
+      console.error(
+        "Il file index.html e app.js non corrispondono. Sostituisci index.html con l'ultima versione completa."
+      );
+      return;
+    }
+
+    if (!window.crypto || !window.crypto.subtle) {
       showToast(
-        "Apri il sito da Vercel tramite HTTPS per usare la cifratura.",
+        "Apri il sito dal dominio Vercel HTTPS per attivare la cifratura.",
         "error"
       );
       return;
     }
 
     bindEvents();
-    updateFileInformation();
+    updateFileStatus();
     renderEntries();
     generatePassword();
   }
