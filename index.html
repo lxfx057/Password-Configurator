@@ -1,385 +1,241 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="it">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta
-    name="description"
-    content="A private, local-first password generator, analyzer, tester and encrypted vault."
-  />
-  <meta name="theme-color" content="#07111f" />
+  <meta name="theme-color" content="#09090b" />
+  <meta name="description" content="Password vault locale: genera e salva password cifrate." />
 
   <title>Password Configurator</title>
 
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./style.css" />
 </head>
 
 <body>
-  <div class="background-orb orb-one"></div>
-  <div class="background-orb orb-two"></div>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
 
-  <main class="app-shell">
+  <main class="app">
     <header class="topbar">
-      <a class="brand" href="#generator" aria-label="Password Configurator home">
-        <span class="brand-icon" aria-hidden="true">⌘</span>
+      <a class="brand" href="./" aria-label="Password Configurator">
+        <span class="brand-mark">⌘</span>
         <span>Password Configurator</span>
       </a>
 
       <div class="vault-status" id="vaultStatus" aria-live="polite">
         <span class="status-dot"></span>
-        <span>Vault locked</span>
+        <span id="vaultStatusText">Vault bloccato</span>
       </div>
 
-      <button class="icon-button" id="lockButton" type="button" aria-label="Lock vault" disabled>
-        <span aria-hidden="true">􀎡</span>
+      <button class="icon-button" id="lockButton" type="button" disabled aria-label="Blocca vault">
+        🔒
       </button>
     </header>
 
     <section class="hero">
       <p class="eyebrow">PRIVATE · LOCAL · ENCRYPTED</p>
-      <h1>Your passwords, under your control.</h1>
-      <p class="hero-copy">
-        Generate, analyze, test and save credentials in one secure local workspace.
+      <h1>Password semplici.<br />Protezione seria.</h1>
+      <p>
+        Genera password sicure e salvale in un vault cifrato, tutto localmente sul tuo dispositivo.
       </p>
     </section>
 
-    <nav class="section-nav" aria-label="Application sections">
-      <a href="#generator">Generate</a>
-      <a href="#analyzer">Analyze</a>
-      <a href="#tester">Test</a>
-      <a href="#vault">Vault</a>
-    </nav>
-
-    <section class="workspace-grid">
-      <article class="glass-card generator-card" id="generator">
-        <div class="card-heading">
+    <section class="workspace">
+      <article class="panel generator-panel" id="generator">
+        <div class="panel-heading">
           <div>
-            <p class="section-label">01 · GENERATE</p>
-            <h2>Create a secure password</h2>
+            <p class="section-label">GENERA</p>
+            <h2>Nuova password</h2>
           </div>
 
-          <button class="secondary-button" id="regenerateButton" type="button">
-            Regenerate
+          <button class="button button-secondary" id="regenerateButton" type="button">
+            Rigenera
           </button>
         </div>
 
-        <div class="generated-password-wrap">
-          <output id="generatedPassword" class="generated-password" aria-live="polite">
-            Loading...
-          </output>
+        <div class="generated-password-box">
+          <output id="generatedPassword" class="generated-password" aria-live="polite"></output>
 
           <div class="generated-actions">
-            <button class="icon-button copy-button" id="copyGeneratedButton" type="button" aria-label="Copy generated password">
-              Copy
+            <button class="button button-secondary" id="copyGeneratedButton" type="button">
+              Copia
             </button>
-            <button class="primary-button" id="saveGeneratedButton" type="button">
-              Save to vault
+
+            <button class="button button-primary" id="saveGeneratedButton" type="button">
+              Salva nel vault
             </button>
           </div>
         </div>
 
-        <div class="strength-summary">
-          <div>
-            <span class="muted-label">Strength</span>
-            <strong id="generatedStrengthLabel">Excellent</strong>
-          </div>
-          <div>
-            <span class="muted-label">Estimated entropy</span>
-            <strong id="generatedEntropy">0 bits</strong>
-          </div>
-          <div>
-            <span class="muted-label">Length</span>
-            <strong id="generatedLength">20</strong>
-          </div>
+        <div class="quick-presets" aria-label="Preset password">
+          <button class="preset active" data-preset="balanced" type="button">Bilanciata</button>
+          <button class="preset" data-preset="easy" type="button">Facile da digitare</button>
+          <button class="preset" data-preset="maximum" type="button">Massima sicurezza</button>
         </div>
 
-        <div class="strength-track" aria-label="Generated password strength">
-          <span id="generatedStrengthBar"></span>
-        </div>
-
-        <div class="preset-row" role="group" aria-label="Password presets">
-          <button class="preset-button active" data-preset="balanced" type="button">Balanced</button>
-          <button class="preset-button" data-preset="memorable" type="button">Easy to type</button>
-          <button class="preset-button" data-preset="maximum" type="button">Maximum security</button>
-        </div>
-
-        <div class="generator-controls">
-          <div class="range-control">
-            <div class="control-label-row">
-              <label for="lengthRange">Password length</label>
-              <output id="lengthValue">20</output>
+        <div class="generator-settings">
+          <div class="length-control">
+            <div class="length-row">
+              <label for="lengthInput">Lunghezza</label>
+              <output id="lengthOutput">20</output>
             </div>
 
-            <input id="lengthRange" type="range" min="8" max="64" value="20" />
+            <input id="lengthInput" type="range" min="8" max="64" value="20" />
           </div>
 
-          <div class="toggle-grid">
-            <label class="switch-row">
-              <span>Uppercase letters</span>
-              <input id="uppercaseToggle" type="checkbox" checked />
-              <span class="switch-ui"></span>
+          <div class="options-grid">
+            <label class="option-row">
+              <span>Maiuscole</span>
+              <input id="uppercaseInput" type="checkbox" checked />
             </label>
 
-            <label class="switch-row">
-              <span>Lowercase letters</span>
-              <input id="lowercaseToggle" type="checkbox" checked />
-              <span class="switch-ui"></span>
+            <label class="option-row">
+              <span>Minuscole</span>
+              <input id="lowercaseInput" type="checkbox" checked />
             </label>
 
-            <label class="switch-row">
-              <span>Numbers</span>
-              <input id="numbersToggle" type="checkbox" checked />
-              <span class="switch-ui"></span>
+            <label class="option-row">
+              <span>Numeri</span>
+              <input id="numbersInput" type="checkbox" checked />
             </label>
 
-            <label class="switch-row">
-              <span>Symbols</span>
-              <input id="symbolsToggle" type="checkbox" checked />
-              <span class="switch-ui"></span>
+            <label class="option-row">
+              <span>Simboli</span>
+              <input id="symbolsInput" type="checkbox" checked />
             </label>
 
-            <label class="switch-row">
-              <span>Exclude ambiguous</span>
-              <input id="ambiguousToggle" type="checkbox" checked />
-              <span class="switch-ui"></span>
+            <label class="option-row">
+              <span>Escludi caratteri ambigui</span>
+              <input id="ambiguousInput" type="checkbox" checked />
             </label>
           </div>
         </div>
       </article>
 
-      <article class="glass-card analyzer-card" id="analyzer">
-        <div class="card-heading">
+      <article class="panel vault-panel" id="vault">
+        <div class="panel-heading">
           <div>
-            <p class="section-label">02 · ANALYZE</p>
-            <h2>Understand password strength</h2>
+            <p class="section-label">VAULT</p>
+            <h2>Credenziali salvate</h2>
           </div>
-        </div>
 
-        <label class="field-label" for="analyzerInput">Password to analyze</label>
-
-        <div class="password-input-wrap">
-          <input
-            id="analyzerInput"
-            type="password"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="Type or paste a password"
-          />
-          <button class="reveal-button" id="analyzerRevealButton" type="button" aria-label="Show password">
-            Show
+          <button class="button button-primary" id="addCredentialButton" type="button" disabled>
+            Aggiungi
           </button>
         </div>
 
-        <div class="analyzer-score">
-          <div class="score-ring" id="scoreRing">
-            <strong id="analyzerScore">0</strong>
-            <span>/100</span>
-          </div>
-
-          <div>
-            <span class="muted-label">Security level</span>
-            <h3 id="analyzerLevel">Waiting for input</h3>
-            <p id="analyzerDescription">Your password is only analyzed in this browser.</p>
-          </div>
-        </div>
-
-        <div class="strength-track analyzer-track">
-          <span id="analyzerStrengthBar"></span>
-        </div>
-
-        <ul class="insights-list" id="analyzerInsights">
-          <li>Enter a password to receive a local assessment.</li>
-        </ul>
-      </article>
-
-      <article class="glass-card tester-card" id="tester">
-        <div class="card-heading">
-          <div>
-            <p class="section-label">03 · TEST</p>
-            <h2>Check site requirements</h2>
-          </div>
-        </div>
-
-        <label class="field-label" for="testerInput">Password to test</label>
-
-        <div class="password-input-wrap">
-          <input
-            id="testerInput"
-            type="password"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="Paste a password to test"
-          />
-          <button class="reveal-button" id="testerRevealButton" type="button" aria-label="Show password">
-            Show
-          </button>
-        </div>
-
-        <div class="requirements-grid">
-          <label class="requirement-field">
-            <span>Minimum length</span>
-            <input id="minimumLengthInput" type="number" min="1" max="128" value="15" />
-          </label>
-
-          <label class="check-row">
-            <input id="requireUppercase" type="checkbox" checked />
-            <span>Requires uppercase</span>
-          </label>
-
-          <label class="check-row">
-            <input id="requireLowercase" type="checkbox" checked />
-            <span>Requires lowercase</span>
-          </label>
-
-          <label class="check-row">
-            <input id="requireNumber" type="checkbox" checked />
-            <span>Requires a number</span>
-          </label>
-
-          <label class="check-row">
-            <input id="requireSymbol" type="checkbox" />
-            <span>Requires a symbol</span>
-          </label>
-
-          <label class="requirement-field full-width">
-            <span>Forbidden characters (optional)</span>
-            <input id="forbiddenCharacters" type="text" autocomplete="off" placeholder="Example: &lt;&gt; ' &quot; space" />
-          </label>
-        </div>
-
-        <div class="test-result" id="testResult" aria-live="polite">
-          Add a password to run the test.
-        </div>
-
-        <ul class="test-list" id="testList">
-          <li class="neutral">No test result yet.</li>
-        </ul>
-      </article>
-
-      <article class="glass-card vault-card" id="vault">
-        <div class="card-heading">
-          <div>
-            <p class="section-label">04 · VAULT</p>
-            <h2>Encrypted local storage</h2>
-          </div>
-
-          <button class="primary-button" id="addCredentialButton" type="button" disabled>
-            Add credential
-          </button>
-        </div>
-
-        <div class="vault-locked-state" id="vaultLockedState">
-          <div class="vault-lock-icon" aria-hidden="true">􀎡</div>
-          <h3 id="vaultLockTitle">Set up your local vault</h3>
-          <p id="vaultLockDescription">
-            Create a master password. It encrypts the credentials saved on this device.
+        <section class="vault-locked" id="vaultLocked">
+          <div class="vault-icon">🔒</div>
+          <h3 id="vaultTitle">Configura il vault locale</h3>
+          <p id="vaultDescription">
+            Crea una master password per cifrare le credenziali salvate su questo dispositivo.
           </p>
-
-          <button class="primary-button" id="openVaultButton" type="button">
-            Set up vault
+          <button class="button button-primary" id="openVaultButton" type="button">
+            Configura vault
           </button>
-        </div>
+        </section>
 
-        <div class="vault-unlocked-state hidden" id="vaultUnlockedState">
-          <div class="vault-toolbar">
-            <label class="search-field">
-              <span class="sr-only">Search credentials</span>
-              <input id="vaultSearchInput" type="search" placeholder="Search saved credentials" />
-            </label>
+        <section class="vault-unlocked hidden" id="vaultUnlocked">
+          <div class="vault-tools">
+            <input id="searchInput" type="search" placeholder="Cerca una credenziale" autocomplete="off" />
 
-            <div class="vault-toolbar-actions">
-              <button class="secondary-button" id="exportButton" type="button">Export backup</button>
-              <label class="secondary-button file-label">
-                Import backup
+            <div class="vault-actions">
+              <button class="button button-secondary" id="exportButton" type="button">
+                Esporta
+              </button>
+
+              <label class="button button-secondary import-label">
+                Importa
                 <input id="importInput" type="file" accept="application/json,.json" hidden />
               </label>
             </div>
           </div>
 
-          <div class="vault-list" id="vaultList"></div>
-        </div>
+          <div class="credentials-list" id="credentialsList"></div>
+        </section>
       </article>
     </section>
 
-    <footer class="footer-note">
-      <span>Passwords are generated and analyzed locally.</span>
-      <span>Saved credentials are encrypted before storage.</span>
+    <footer>
+      Generazione, cifratura e salvataggio avvengono localmente nel browser.
     </footer>
   </main>
 
-  <dialog class="app-dialog" id="masterPasswordDialog">
-    <form method="dialog" id="masterPasswordForm">
-      <button class="dialog-close" type="button" id="closeMasterDialogButton" aria-label="Close dialog">×</button>
-      <p class="section-label" id="masterDialogLabel">LOCAL ENCRYPTION</p>
-      <h2 id="masterDialogTitle">Set up your vault</h2>
-      <p id="masterDialogDescription">
-        Choose a strong master password. It is never stored and cannot be recovered.
+  <dialog class="dialog" id="masterDialog">
+    <form id="masterForm">
+      <button class="dialog-close" type="button" id="masterCloseButton" aria-label="Chiudi">×</button>
+
+      <p class="section-label" id="masterDialogLabel">CRITTOGRAFIA LOCALE</p>
+      <h2 id="masterDialogTitle">Configura il vault</h2>
+      <p class="dialog-copy" id="masterDialogText">
+        La master password non viene salvata e non può essere recuperata.
       </p>
 
-      <label class="field-label" for="masterPasswordInput">Master password</label>
-      <input id="masterPasswordInput" type="password" autocomplete="new-password" required minlength="10" />
+      <label for="masterPasswordInput">Master password</label>
+      <input id="masterPasswordInput" type="password" autocomplete="new-password" minlength="10" required />
 
-      <label class="field-label hidden" for="masterPasswordConfirmInput" id="masterConfirmLabel">
-        Confirm master password
-      </label>
-      <input id="masterPasswordConfirmInput" class="hidden" type="password" autocomplete="new-password" minlength="10" />
+      <div id="masterConfirmGroup">
+        <label for="masterConfirmInput">Conferma master password</label>
+        <input id="masterConfirmInput" type="password" autocomplete="new-password" minlength="10" required />
+      </div>
 
-      <p class="dialog-error hidden" id="masterDialogError"></p>
+      <p class="dialog-error hidden" id="masterError"></p>
 
-      <button class="primary-button dialog-submit" id="masterDialogSubmit" type="submit">
-        Create encrypted vault
+      <button class="button button-primary dialog-submit" id="masterSubmitButton" type="submit">
+        Crea vault cifrato
       </button>
     </form>
   </dialog>
 
-  <dialog class="app-dialog" id="credentialDialog">
-    <form method="dialog" id="credentialForm">
-      <button class="dialog-close" type="button" id="closeCredentialDialogButton" aria-label="Close dialog">×</button>
-      <p class="section-label">CREDENTIAL</p>
-      <h2 id="credentialDialogTitle">Save password</h2>
+  <dialog class="dialog" id="credentialDialog">
+    <form id="credentialForm">
+      <button class="dialog-close" type="button" id="credentialCloseButton" aria-label="Chiudi">×</button>
+
+      <p class="section-label">CREDENZIALE</p>
+      <h2 id="credentialDialogTitle">Salva password</h2>
 
       <input id="credentialIdInput" type="hidden" />
 
-      <label class="field-label" for="credentialNameInput">Service name</label>
-      <input id="credentialNameInput" type="text" autocomplete="off" required placeholder="Example: GitHub" />
+      <label for="credentialNameInput">Servizio</label>
+      <input id="credentialNameInput" type="text" placeholder="Esempio: GitHub" autocomplete="off" required />
 
-      <label class="field-label" for="credentialUsernameInput">Username or email</label>
-      <input id="credentialUsernameInput" type="text" autocomplete="username" placeholder="name@example.com" />
+      <label for="credentialUsernameInput">Username o email</label>
+      <input id="credentialUsernameInput" type="text" placeholder="nome@email.com" autocomplete="username" />
 
-      <label class="field-label" for="credentialPasswordInput">Password</label>
-      <div class="password-input-wrap">
+      <label for="credentialPasswordInput">Password</label>
+      <div class="password-field">
         <input id="credentialPasswordInput" type="password" autocomplete="new-password" required />
-        <button class="reveal-button" id="credentialRevealButton" type="button">Show</button>
+        <button class="show-password" id="credentialShowButton" type="button">Mostra</button>
       </div>
 
-      <label class="field-label" for="credentialNotesInput">Notes</label>
-      <textarea id="credentialNotesInput" rows="3" placeholder="Optional notes"></textarea>
+      <label for="credentialNotesInput">Note</label>
+      <textarea id="credentialNotesInput" rows="3" placeholder="Opzionale"></textarea>
 
       <div class="dialog-actions">
-        <button class="secondary-button" type="button" id="cancelCredentialButton">Cancel</button>
-        <button class="primary-button" type="submit">Save encrypted</button>
+        <button class="button button-secondary" id="credentialCancelButton" type="button">
+          Annulla
+        </button>
+        <button class="button button-primary" type="submit">
+          Salva cifrata
+        </button>
       </div>
     </form>
   </dialog>
 
-  <dialog class="app-dialog compact-dialog" id="confirmDialog">
+  <dialog class="dialog dialog-small" id="confirmDialog">
     <form method="dialog">
-      <h2 id="confirmDialogTitle">Confirm action</h2>
-      <p id="confirmDialogDescription"></p>
+      <h2 id="confirmTitle">Conferma</h2>
+      <p class="dialog-copy" id="confirmText"></p>
 
       <div class="dialog-actions">
-        <button class="secondary-button" value="cancel">Cancel</button>
-        <button class="danger-button" id="confirmDialogButton" value="confirm">Delete</button>
+        <button class="button button-secondary" value="cancel">Annulla</button>
+        <button class="button button-danger" id="confirmButton" value="confirm">Elimina</button>
       </div>
     </form>
   </dialog>
 
-  <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+  <div class="toast-area" id="toastArea" aria-live="polite"></div>
 
-  <script src="./crypto.js"></script>
-  <script src="./vault.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
