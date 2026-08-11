@@ -2,7 +2,6 @@
   color-scheme: dark;
   --background: #000000;
   --surface: rgba(28, 28, 30, 0.92);
-  --surface-soft: rgba(44, 44, 46, 0.72);
   --input: #161617;
   --border: rgba(255, 255, 255, 0.1);
   --border-strong: rgba(255, 255, 255, 0.19);
@@ -28,7 +27,6 @@
 html {
   min-height: 100%;
   background: var(--background);
-  scroll-behavior: smooth;
 }
 
 body {
@@ -45,8 +43,7 @@ body {
 
 button,
 input,
-textarea,
-select {
+textarea {
   font: inherit;
 }
 
@@ -55,33 +52,24 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
 button:focus-visible,
 input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
+textarea:focus-visible {
   outline: 3px solid rgba(10, 132, 255, 0.7);
   outline-offset: 3px;
 }
 
 input,
-textarea,
-select {
+textarea {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 13px;
   outline: none;
   background: var(--input);
   color: var(--text);
-  transition: 160ms ease;
 }
 
-input,
-select {
+input {
   min-height: 48px;
   padding: 0 14px;
 }
@@ -98,8 +86,7 @@ textarea::placeholder {
 }
 
 input:focus,
-textarea:focus,
-select:focus {
+textarea:focus {
   border-color: rgba(105, 177, 255, 0.75);
   box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.11);
 }
@@ -122,11 +109,17 @@ input[type="range"] {
   padding: 22px 0 48px;
 }
 
-.topbar {
+.topbar,
+.panel-header,
+.password-output-box,
+.file-actions,
+.dialog-actions,
+.strength-top,
+.setting-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
 }
 
 .brand {
@@ -148,40 +141,49 @@ input[type="range"] {
   border: 1px solid rgba(255, 255, 255, 0.27);
   border-radius: 11px;
   background: linear-gradient(145deg, #5ca9ff, #0068d9);
-  box-shadow: 0 10px 25px rgba(10, 132, 255, 0.2);
   color: white;
   font-size: 18px;
 }
 
-.vault-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 0 11px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--muted);
-  font-size: 12px;
+.header-button,
+.button,
+.small-button,
+.preset {
+  min-height: 39px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 13px;
   font-weight: 750;
 }
 
-.vault-status:hover {
+.header-button,
+.button-secondary,
+.small-button,
+.preset {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+}
+
+.header-button:hover,
+.button-secondary:hover,
+.small-button:hover,
+.preset:hover {
   border-color: var(--border-strong);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.09);
   color: var(--text);
 }
 
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--orange);
+.button-primary {
+  border: 1px solid rgba(117, 187, 255, 0.6);
+  background: linear-gradient(180deg, #36a0ff, #0a84ff);
+  color: white;
 }
 
-.vault-status.unlocked .status-dot {
-  background: var(--green);
+.button-danger {
+  border: 1px solid rgba(255, 69, 58, 0.5);
+  background: rgba(255, 69, 58, 0.15);
+  color: #ffcbc7;
 }
 
 .hero {
@@ -204,12 +206,18 @@ input[type="range"] {
   letter-spacing: -0.072em;
 }
 
+.hero > p:last-child,
+.file-description,
+.file-note,
+.dialog-description {
+  color: var(--muted);
+  line-height: 1.56;
+}
+
 .hero > p:last-child {
   max-width: 580px;
   margin: 21px 0 0;
-  color: var(--muted);
   font-size: 17px;
-  line-height: 1.56;
 }
 
 .panel {
@@ -220,15 +228,12 @@ input[type="range"] {
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
 }
 
-.vault-panel {
+.file-panel {
   margin-top: 16px;
 }
 
 .panel-header {
-  display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
 }
 
 h2 {
@@ -237,90 +242,8 @@ h2 {
   letter-spacing: -0.05em;
 }
 
-h3 {
-  margin: 0;
-  letter-spacing: -0.035em;
-}
-
-.button,
-.backup-button,
-.mode-button,
-.preset {
-  min-height: 39px;
-  padding: 0 14px;
-  border-radius: 11px;
-  font-size: 13px;
-  font-weight: 750;
-  transition: 160ms ease;
-}
-
-.button:active,
-.backup-button:active,
-.mode-button:active,
-.preset:active {
-  transform: scale(0.98);
-}
-
-.button-secondary,
-.backup-button {
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--muted);
-}
-
-.button-secondary:hover,
-.backup-button:hover {
-  border-color: var(--border-strong);
-  background: rgba(255, 255, 255, 0.09);
-  color: var(--text);
-}
-
-.button-primary {
-  border: 1px solid rgba(117, 187, 255, 0.6);
-  background: linear-gradient(180deg, #36a0ff, #0a84ff);
-  box-shadow: 0 12px 26px rgba(10, 132, 255, 0.17);
-  color: white;
-}
-
-.button-primary:hover {
-  background: linear-gradient(180deg, #57afff, #168dff);
-}
-
-.button-danger {
-  border: 1px solid rgba(255, 69, 58, 0.5);
-  background: rgba(255, 69, 58, 0.15);
-  color: #ffcbc7;
-}
-
-.mode-selector {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 5px;
-  margin-top: 26px;
-  padding: 5px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: rgba(0, 0, 0, 0.28);
-}
-
-.mode-button {
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--muted);
-}
-
-.mode-button.active {
-  border-color: rgba(105, 177, 255, 0.35);
-  background: rgba(10, 132, 255, 0.16);
-  color: white;
-}
-
 .password-output-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 18px 0 15px;
+  margin: 25px 0 15px;
   padding: 18px;
   border: 1px solid rgba(105, 177, 255, 0.3);
   border-radius: var(--radius-medium);
@@ -333,11 +256,10 @@ h3 {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: clamp(20px, 4vw, 28px);
   font-weight: 760;
-  letter-spacing: 0.02em;
 }
 
 .generated-password.masked {
-  letter-spacing: 0.12em;
+  letter-spacing: 0.13em;
 }
 
 .output-actions {
@@ -346,34 +268,15 @@ h3 {
   gap: 7px;
 }
 
-.icon-copy-button {
-  min-height: 34px;
-  padding: 0 10px;
+.strength-card,
+.setting-card {
+  padding: 15px;
   border: 1px solid var(--border);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 780;
-}
-
-.icon-copy-button:hover {
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-
-.strength-card {
-  margin-bottom: 22px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 15px;
   background: rgba(0, 0, 0, 0.22);
 }
 
 .strength-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
   color: var(--muted);
   font-size: 13px;
 }
@@ -396,27 +299,20 @@ h3 {
   height: 100%;
   border-radius: inherit;
   background: var(--red);
-  transition: width 220ms ease, background 220ms ease;
+  transition: 200ms ease;
 }
 
 .strength-card p {
   margin: 0;
   color: var(--muted-dark);
   font-size: 12px;
-  line-height: 1.45;
 }
 
 .preset-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 14px;
-}
-
-.preset {
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.045);
-  color: var(--muted);
+  margin: 17px 0 14px;
 }
 
 .preset.active {
@@ -431,22 +327,11 @@ h3 {
   gap: 12px;
 }
 
-.setting-card {
-  padding: 15px;
-  border: 1px solid var(--border);
-  border-radius: 15px;
-  background: rgba(0, 0, 0, 0.22);
-}
-
 .full-width {
   grid-column: 1 / -1;
 }
 
 .setting-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 11px;
   color: var(--muted);
   font-size: 14px;
 }
@@ -485,7 +370,6 @@ h3 {
   height: 25px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.16);
-  transition: background 170ms ease;
 }
 
 .switch::after {
@@ -516,66 +400,32 @@ h3 {
   font-weight: 730;
 }
 
-.prefix-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.save-password-button {
-  width: 100%;
-  margin-top: 20px;
-}
-
-.vault-locked {
-  display: grid;
-  justify-items: center;
-  max-width: 520px;
-  margin: 28px auto 0;
-  padding: 31px 21px;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-medium);
-  text-align: center;
-}
-
-.vault-lock-icon {
-  display: grid;
-  width: 49px;
-  height: 49px;
-  place-items: center;
-  border-radius: 16px;
-  background: rgba(10, 132, 255, 0.15);
-  font-size: 21px;
-}
-
-.vault-locked h3 {
-  margin-top: 15px;
-  font-size: 21px;
-}
-
-.vault-locked p {
-  max-width: 415px;
-  margin: 8px 0 20px;
+.file-state {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
   color: var(--muted);
-  line-height: 1.52;
+  font-size: 11px;
+  font-weight: 760;
 }
 
-.vault-toolbar {
-  display: flex;
-  gap: 10px;
-  margin: 26px 0 14px;
+.file-description {
+  max-width: 560px;
+  margin: 22px 0;
 }
 
-.vault-toolbar input {
-  flex: 1;
+.file-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
 }
 
-.credential-list {
+.password-list {
   display: grid;
   gap: 9px;
+  margin-top: 18px;
 }
 
-.credential {
+.entry {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -586,50 +436,30 @@ h3 {
   background: rgba(0, 0, 0, 0.34);
 }
 
-.credential-name {
+.entry-name,
+.entry-user {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.entry-name {
   font-weight: 820;
 }
 
-.credential-user {
+.entry-user {
   margin-top: 4px;
-  overflow: hidden;
   color: var(--muted);
   font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.credential-actions {
+.entry-actions {
   display: flex;
   gap: 7px;
 }
 
-.small-action {
-  min-height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.045);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 780;
-}
-
-.small-action:hover {
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-
-.small-action.delete:hover {
-  border-color: rgba(255, 69, 58, 0.5);
-  color: #ffb6b0;
-}
-
-.empty-vault {
-  padding: 29px 16px;
+.empty-list {
+  padding: 28px 16px;
   border: 1px dashed var(--border);
   border-radius: var(--radius-medium);
   color: var(--muted);
@@ -637,17 +467,16 @@ h3 {
   text-align: center;
 }
 
-.backup-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 15px;
+.download-button {
+  width: 100%;
+  margin-top: 18px;
 }
 
-.backup-button {
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
+.file-note {
+  margin: 12px 0 0;
+  color: var(--muted-dark);
+  font-size: 12px;
+  text-align: center;
 }
 
 footer {
@@ -701,8 +530,6 @@ footer {
 
 .dialog-description {
   margin: 10px 0 0;
-  color: var(--muted);
-  line-height: 1.52;
 }
 
 .dialog-submit {
@@ -718,7 +545,7 @@ footer {
   padding-right: 75px;
 }
 
-.show-password-button {
+.show-field-button {
   position: absolute;
   top: 50%;
   right: 6px;
@@ -734,9 +561,7 @@ footer {
 }
 
 .dialog-actions {
-  display: flex;
   justify-content: flex-end;
-  gap: 8px;
   margin-top: 23px;
 }
 
@@ -768,7 +593,6 @@ footer {
   box-shadow: 0 15px 42px rgba(0, 0, 0, 0.36);
   color: var(--text);
   font-size: 13px;
-  animation: toast-in 180ms ease both;
 }
 
 .toast.success {
@@ -777,18 +601,6 @@ footer {
 
 .toast.error {
   border-color: rgba(255, 69, 58, 0.48);
-}
-
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @media (max-width: 620px) {
@@ -801,36 +613,26 @@ footer {
     padding: 57px 2px 29px;
   }
 
-  .hero > p:last-child {
-    font-size: 16px;
-  }
-
   .panel {
     padding: 20px;
     border-radius: 22px;
   }
 
   .panel-header,
-  .password-output-box,
-  .vault-toolbar {
+  .password-output-box {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .panel-header .button-secondary {
-    width: 100%;
   }
 
   .output-actions {
     width: 100%;
   }
 
-  .icon-copy-button {
+  .small-button {
     flex: 1;
   }
 
-  .settings-grid,
-  .prefix-grid {
+  .settings-grid {
     grid-template-columns: 1fr;
   }
 
@@ -838,19 +640,11 @@ footer {
     grid-column: auto;
   }
 
-  .credential {
+  .entry {
     grid-template-columns: 1fr;
   }
 
-  .credential-actions {
+  .entry-actions {
     flex-wrap: wrap;
-  }
-
-  .backup-actions {
-    flex-direction: column;
-  }
-
-  .backup-button {
-    justify-content: center;
   }
 }
