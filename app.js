@@ -6,10 +6,24 @@
   const SETTINGS_STORE = "settings";
   const CREDENTIALS_STORE = "credentials";
 
-  const LOWERCASE = "abcdefghijkmnopqrstuvwxyz";
-  const UPPERCASE = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const NUMBERS = "23456789";
-  const SYMBOLS = "!@#$%^&*+-_=?.";
+  const WORDS = [
+    "ambra", "ananas", "aquila", "arco", "aurora", "balena", "bambu", "bosco",
+    "brezza", "cactus", "caffe", "cielo", "cigno", "corallo", "delfino",
+    "deserto", "drago", "edera", "falco", "farfalla", "fiore", "fiume",
+    "foresta", "fulmine", "gatto", "gelato", "girasole", "granito", "isola",
+    "lampo", "luna", "marea", "montagna", "muschio", "neve", "oceano",
+    "oliva", "onda", "orchidea", "panda", "perla", "pino", "ponte", "prato",
+    "quarzo", "radice", "raggio", "rosa", "sabbia", "sale", "seme", "sole",
+    "stella", "tigre", "tulipano", "ulivo", "valle", "vento", "viola", "volpe"
+  ];
+
+  const CHARSETS = {
+    lowercase: "abcdefghijkmnopqrstuvwxyz",
+    uppercase: "ABCDEFGHJKLMNPQRSTUVWXYZ",
+    numbers: "23456789",
+    symbols: "!@#$%^&*+-_=?."
+  };
+
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
@@ -19,6 +33,9 @@
     vaultKey: null,
     credentials: [],
     masterDialogMode: "setup",
+    generatorMode: "random",
+    generatedPassword: "",
+    revealed: true,
     timeout: null
   };
 
@@ -28,14 +45,38 @@
     vaultStatusButton: $("#vaultStatusButton"),
     vaultStatusText: $("#vaultStatusText"),
 
+    randomModeButton: $("#randomModeButton"),
+    phraseModeButton: $("#phraseModeButton"),
+    randomOptions: $("#randomOptions"),
+    phraseOptions: $("#phraseOptions"),
+
     generatedPassword: $("#generatedPassword"),
     regenerateButton: $("#regenerateButton"),
     copyGeneratedButton: $("#copyGeneratedButton"),
+    showGeneratedButton: $("#showGeneratedButton"),
+    strengthLabel: $("#strengthLabel"),
+    strengthBar: $("#strengthBar"),
+    strengthDescription: $("#strengthDescription"),
+
     lengthRange: $("#lengthRange"),
     lengthValue: $("#lengthValue"),
     uppercaseToggle: $("#uppercaseToggle"),
+    lowercaseToggle: $("#lowercaseToggle"),
     numbersToggle: $("#numbersToggle"),
     symbolsToggle: $("#symbolsToggle"),
+    ambiguousToggle: $("#ambiguousToggle"),
+    startLetterToggle: $("#startLetterToggle"),
+    excludeInput: $("#excludeInput"),
+    prefixInput: $("#prefixInput"),
+    suffixInput: $("#suffixInput"),
+
+    wordCountRange: $("#wordCountRange"),
+    wordCountValue: $("#wordCountValue"),
+    separatorSelect: $("#separatorSelect"),
+    capitalizePhraseToggle: $("#capitalizePhraseToggle"),
+    phraseNumberToggle: $("#phraseNumberToggle"),
+    phraseSymbolToggle: $("#phraseSymbolToggle"),
+
     saveGeneratedButton: $("#saveGeneratedButton"),
 
     lockVaultButton: $("#lockVaultButton"),
@@ -84,21 +125,17 @@
 
   function showToast(message, type = "") {
     const toast = document.createElement("div");
-
     toast.className = `toast ${type}`;
     toast.textContent = message;
     ui.toastContainer.append(toast);
-
     window.setTimeout(() => toast.remove(), 3300);
   }
 
   function bytesToBase64(bytes) {
     let binary = "";
-
     bytes.forEach((byte) => {
       binary += String.fromCharCode(byte);
     });
-
     return btoa(binary);
   }
 
@@ -141,31 +178,239 @@
     return copy;
   }
 
-  function generatePassword() {
-    const groups = [LOWERCASE];
-
-    if (ui.uppercaseToggle.checked) groups.push(UPPERCASE);
-    if (ui.numbersToggle.checked) groups.push(NUMBERS);
-    if (ui.symbolsToggle.checked) groups.push(SYMBOLS);
-
-    const desiredLength = Number(ui.lengthRange.value);
-    const finalLength = Math.max(desiredLength, groups.length);
-    const allCharacters = groups.join("");
-    const password = [];
-
-    groups.forEach((group) => {
-      password.push(group[randomIndex(group.length)]);
-    });
-
-    while (password.length < finalLength) {
-      password.push(allCharacters[randomIndex(allCharacters.length)]);
-    }
-
-    ui.generatedPassword.textContent = secureShuffle(password).join("");
-    ui.lengthValue.textContent = String(finalLength);
+  function uniqueCharacters(value) {
+    return [...new Set(value)].join("");
   }
 
-  async function copyToClipboard(text, successMessage) {
+  function getRandomCharacter(value) {
+    return value[randomIndex(value.length)];
+  }
+
+  function generateRandomPassword() {
+    const excluded = ui.excludeInput.value || "";
+    const avoidAmbiguous = ui.ambiguousToggle.checked;
+    const ambiguous = "Il1O0o";
+
+    let lowercase = CHARSETS.lowercase;
+    let uppercase = CHARSETS.uppercase;
+    let numbers = CHARSETS.numbers;
+    let symbols = CHARSETS.symbols;
+
+    if (avoidAmbiguous) {
+      lowercase = lowercase.replace(/[l1o]/g, "");
+      uppercase = uppercase.replace(/[IO]/g, "");
+      numbers = numbers.replace(/[01]/g, "");
+    }
+
+    const removeExcluded = (characters) =>
+      [...characters].filter((character) => !excluded.includes(character)).join("");
+
+    lowercase = removeExcluded(lowercase);
+    uppercase = removeExcluded(uppercase);
+    numbers = removeExcluded(numbers);
+    symbols = removeExcluded(symbols);
+
+    const groups = [];
+
+    if (ui.lowercaseToggle.checked && lowercase) groups.push(lowercase);
+    if (ui.uppercaseToggle.checked && uppercase) groups.push(uppercase);
+    if (ui.numbersToggle.checked && numbers) groups.push(numbers);
+    if (ui.symbolsToggle.checked && symbols) groups.push(symbols);
+
+    if (!groups.length) {
+      showToast("Scegli almeno un gruppo di caratteri disponibile.", "error");
+      return state.generatedPassword || "Password";
+    }
+
+    const prefix = ui.prefixInput.value;
+    const suffix = ui.suffixInput.value;
+    const requestedLength = Number(ui.lengthRange.value);
+    const availableLength = requestedLength - prefix.length - suffix.length;
+
+    if (availableLength < groups.length) {
+      showToast("Aumenta la lunghezza o riduci prefisso e suffisso.", "error");
+      return state.generatedPassword || "Password";
+    }
+
+    const pool = groups.join("");
+    const generated = [];
+
+    groups.forEach((group) => generated.push(getRandomCharacter(group)));
+
+    while (generated.length < availableLength) {
+      generated.push(getRandomCharacter(pool));
+    }
+
+    let password = secureShuffle(generated).join("");
+
+    if (ui.startLetterToggle.checked) {
+      const letters = `${lowercase}${uppercase}`;
+
+      if (letters) {
+        password = getRandomCharacter(letters) + password.slice(1);
+      }
+    }
+
+    return uniqueCharacters(prefix + password + suffix);
+  }
+
+  function generatePassphrase() {
+    const count = Number(ui.wordCountRange.value);
+    const separator = ui.separatorSelect.value;
+    const words = [];
+    const availableWords = [...WORDS];
+
+    for (let index = 0; index < count; index += 1) {
+      if (!availableWords.length) break;
+
+      const wordIndex = randomIndex(availableWords.length);
+      let word = availableWords.splice(wordIndex, 1)[0];
+
+      if (ui.capitalizePhraseToggle.checked && index === 0) {
+        word = word.charAt(0).toUpperCase() + word.slice(1);
+      }
+
+      words.push(word);
+    }
+
+    let passphrase = words.join(separator);
+
+    if (ui.phraseNumberToggle.checked) {
+      passphrase += `${separator}${randomIndex(90) + 10}`;
+    }
+
+    if (ui.phraseSymbolToggle.checked) {
+      passphrase += getRandomCharacter("!@#$%*+?");
+    }
+
+    return passphrase;
+  }
+
+  function estimateStrength(password) {
+    const length = password.length;
+    let charset = 0;
+
+    if (/[a-z]/.test(password)) charset += 26;
+    if (/[A-Z]/.test(password)) charset += 26;
+    if (/[0-9]/.test(password)) charset += 10;
+    if (/[^A-Za-z0-9]/.test(password)) charset += 30;
+    if (charset === 0) charset = 1;
+
+    const bits = Math.round(length * Math.log2(charset));
+
+    if (bits < 40) {
+      return {
+        label: "Debole",
+        width: 25,
+        color: "#ff453a",
+        description: "Aumenta la lunghezza o aggiungi più varietà."
+      };
+    }
+
+    if (bits < 60) {
+      return {
+        label: "Buona",
+        width: 52,
+        color: "#ff9f0a",
+        description: "Adatta a molti account, ma puoi renderla più lunga."
+      };
+    }
+
+    if (bits < 80) {
+      return {
+        label: "Forte",
+        width: 76,
+        color: "#ffd60a",
+        description: "Una buona scelta per account importanti."
+      };
+    }
+
+    return {
+      label: "Molto forte",
+      width: 100,
+      color: "#30d158",
+      description: "Lunga, casuale e difficile da indovinare."
+    };
+  }
+
+  function updateGeneratedDisplay() {
+    const output = state.revealed
+      ? state.generatedPassword
+      : "•".repeat(Math.min(state.generatedPassword.length, 32));
+
+    ui.generatedPassword.textContent = output;
+    ui.generatedPassword.classList.toggle("masked", !state.revealed);
+    ui.showGeneratedButton.textContent = state.revealed ? "Nascondi" : "Mostra";
+
+    const strength = estimateStrength(state.generatedPassword);
+
+    ui.strengthLabel.textContent = strength.label;
+    ui.strengthBar.style.width = `${strength.width}%`;
+    ui.strengthBar.style.background = strength.color;
+    ui.strengthDescription.textContent = strength.description;
+  }
+
+  function generatePassword() {
+    state.generatedPassword =
+      state.generatorMode === "phrase"
+        ? generatePassphrase()
+        : generateRandomPassword();
+
+    state.revealed = true;
+    updateGeneratedDisplay();
+  }
+
+  function setGeneratorMode(mode) {
+    state.generatorMode = mode;
+
+    ui.randomModeButton.classList.toggle("active", mode === "random");
+    ui.phraseModeButton.classList.toggle("active", mode === "phrase");
+    ui.randomOptions.classList.toggle("hidden", mode !== "random");
+    ui.phraseOptions.classList.toggle("hidden", mode !== "phrase");
+
+    generatePassword();
+  }
+
+  function applyPreset(name) {
+    document.querySelectorAll(".preset").forEach((button) => {
+      button.classList.toggle("active", button.dataset.preset === name);
+    });
+
+    if (name === "balanced") {
+      ui.lengthRange.value = 20;
+      ui.lowercaseToggle.checked = true;
+      ui.uppercaseToggle.checked = true;
+      ui.numbersToggle.checked = true;
+      ui.symbolsToggle.checked = true;
+      ui.ambiguousToggle.checked = true;
+      ui.startLetterToggle.checked = false;
+    }
+
+    if (name === "easy") {
+      ui.lengthRange.value = 18;
+      ui.lowercaseToggle.checked = true;
+      ui.uppercaseToggle.checked = true;
+      ui.numbersToggle.checked = true;
+      ui.symbolsToggle.checked = false;
+      ui.ambiguousToggle.checked = true;
+      ui.startLetterToggle.checked = true;
+    }
+
+    if (name === "strong") {
+      ui.lengthRange.value = 32;
+      ui.lowercaseToggle.checked = true;
+      ui.uppercaseToggle.checked = true;
+      ui.numbersToggle.checked = true;
+      ui.symbolsToggle.checked = true;
+      ui.ambiguousToggle.checked = false;
+      ui.startLetterToggle.checked = false;
+    }
+
+    ui.lengthValue.textContent = ui.lengthRange.value;
+    generatePassword();
+  }
+
+  async function copyToClipboard(text, message) {
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
@@ -180,7 +425,7 @@
         textarea.remove();
       }
 
-      showToast(successMessage, "success");
+      showToast(message, "success");
     } catch {
       showToast("Il browser non ha consentito la copia.", "error");
     }
@@ -297,10 +542,7 @@
     const iv = randomBytes(12);
 
     const encrypted = await crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv
-      },
+      { name: "AES-GCM", iv },
       key,
       encoder.encode(text)
     );
@@ -313,10 +555,7 @@
 
   async function decryptText(payload, key) {
     const decrypted = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: base64ToBytes(payload.iv)
-      },
+      { name: "AES-GCM", iv: base64ToBytes(payload.iv) },
       key,
       base64ToBytes(payload.data)
     );
@@ -327,7 +566,6 @@
   async function createVault(masterPassword) {
     const salt = bytesToBase64(randomBytes(16));
     const vaultKey = await deriveVaultKey(masterPassword, salt);
-
     const verification = await encryptText(
       "password-configurator-verification",
       vaultKey
@@ -353,7 +591,6 @@
 
   async function unlockVault(masterPassword) {
     const vaultKey = await deriveVaultKey(masterPassword, state.settings.salt);
-
     const verification = await decryptText(
       state.settings.verification,
       vaultKey
@@ -393,13 +630,10 @@
   function lockVault(showMessage = true) {
     state.vaultKey = null;
     state.credentials = [];
-
     window.clearTimeout(state.timeout);
     updateVaultInterface();
 
-    if (showMessage) {
-      showToast("Vault bloccato.", "success");
-    }
+    if (showMessage) showToast("Vault bloccato.", "success");
   }
 
   function resetLockTimer() {
@@ -439,21 +673,14 @@
 
   function openMasterDialog(mode) {
     state.masterDialogMode = mode;
-
     const setup = mode === "setup";
 
     ui.masterForm.reset();
     ui.masterError.textContent = "";
     ui.masterError.classList.add("hidden");
 
-    ui.masterKicker.textContent = setup
-      ? "PROTEZIONE LOCALE"
-      : "SBLOCCA VAULT";
-
-    ui.masterTitle.textContent = setup
-      ? "Crea il vault"
-      : "Sblocca il vault";
-
+    ui.masterKicker.textContent = setup ? "PROTEZIONE LOCALE" : "SBLOCCA VAULT";
+    ui.masterTitle.textContent = setup ? "Crea il vault" : "Sblocca il vault";
     ui.masterDescription.textContent = setup
       ? "La master password non viene salvata e non può essere recuperata."
       : "La master password viene usata solo localmente per decifrare il vault.";
@@ -464,11 +691,9 @@
       ? "new-password"
       : "current-password";
 
-    ui.masterSubmitButton.textContent = setup
-      ? "Crea vault"
-      : "Sblocca vault";
-
+    ui.masterSubmitButton.textContent = setup ? "Crea vault" : "Sblocca vault";
     ui.masterDialog.showModal();
+
     window.setTimeout(() => ui.masterPasswordInput.focus(), 50);
   }
 
@@ -479,7 +704,6 @@
     }
 
     ui.credentialForm.reset();
-
     ui.credentialDialogTitle.textContent = credential
       ? "Modifica credenziale"
       : "Salva password";
@@ -488,7 +712,7 @@
     ui.serviceInput.value = credential?.service || "";
     ui.usernameInput.value = credential?.username || "";
     ui.credentialPasswordInput.value =
-      credential?.password || ui.generatedPassword.textContent;
+      credential?.password || state.generatedPassword;
     ui.notesInput.value = credential?.notes || "";
     ui.credentialPasswordInput.type = "password";
     ui.showCredentialPasswordButton.textContent = "Mostra";
@@ -590,7 +814,7 @@
           ${
             query
               ? "Nessuna credenziale trovata."
-              : "Il vault è vuoto. Salva una password generata o aggiungi una credenziale."
+              : "Il vault è vuoto. Salva una password o aggiungi una credenziale."
           }
         </div>
       `;
@@ -604,24 +828,14 @@
             <div>
               <div class="credential-name">${escapeHtml(credential.service)}</div>
               <div class="credential-user">
-                ${escapeHtml(
-                  credential.username || "Nessun username salvato"
-                )}
+                ${escapeHtml(credential.username || "Nessun username salvato")}
               </div>
             </div>
 
             <div class="credential-actions">
-              <button class="small-action" type="button" data-copy="${credential.id}">
-                Copia
-              </button>
-
-              <button class="small-action" type="button" data-edit="${credential.id}">
-                Modifica
-              </button>
-
-              <button class="small-action delete" type="button" data-delete="${credential.id}">
-                Elimina
-              </button>
+              <button class="small-action" type="button" data-copy="${credential.id}">Copia</button>
+              <button class="small-action" type="button" data-edit="${credential.id}">Modifica</button>
+              <button class="small-action delete" type="button" data-delete="${credential.id}">Elimina</button>
             </div>
           </article>
         `
@@ -659,7 +873,6 @@
     if (!confirmed) return;
 
     await deleteCredentialRecord(id);
-
     state.credentials = state.credentials.filter((item) => item.id !== id);
 
     renderCredentials();
@@ -686,15 +899,13 @@
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = `password-vault-${new Date()
-      .toISOString()
-      .slice(0, 10)}.json`;
+    link.download = `password-vault-${new Date().toISOString().slice(0, 10)}.json`;
 
     document.body.append(link);
     link.click();
     link.remove();
-
     URL.revokeObjectURL(url);
+
     resetLockTimer();
     showToast("Backup cifrato esportato.", "success");
   }
@@ -703,8 +914,7 @@
     if (!file) return;
 
     try {
-      const text = await file.text();
-      const backup = JSON.parse(text);
+      const backup = JSON.parse(await file.text());
 
       const validBackup =
         backup?.app === "Password Configurator" &&
@@ -750,27 +960,58 @@
     }
   }
 
-  function bindEvents() {
+  function bindGeneratorEvents() {
+    ui.randomModeButton.addEventListener("click", () => setGeneratorMode("random"));
+    ui.phraseModeButton.addEventListener("click", () => setGeneratorMode("phrase"));
+
     ui.regenerateButton.addEventListener("click", generatePassword);
 
     ui.copyGeneratedButton.addEventListener("click", () => {
-      copyToClipboard(ui.generatedPassword.textContent, "Password copiata.");
+      copyToClipboard(state.generatedPassword, "Password copiata.");
+    });
+
+    ui.showGeneratedButton.addEventListener("click", () => {
+      state.revealed = !state.revealed;
+      updateGeneratedDisplay();
     });
 
     [
       ui.lengthRange,
       ui.uppercaseToggle,
+      ui.lowercaseToggle,
       ui.numbersToggle,
-      ui.symbolsToggle
+      ui.symbolsToggle,
+      ui.ambiguousToggle,
+      ui.startLetterToggle,
+      ui.excludeInput,
+      ui.prefixInput,
+      ui.suffixInput,
+      ui.wordCountRange,
+      ui.separatorSelect,
+      ui.capitalizePhraseToggle,
+      ui.phraseNumberToggle,
+      ui.phraseSymbolToggle
     ].forEach((input) => {
       input.addEventListener("input", generatePassword);
       input.addEventListener("change", generatePassword);
     });
 
-    ui.saveGeneratedButton.addEventListener("click", () => {
-      openCredentialDialog();
+    ui.lengthRange.addEventListener("input", () => {
+      ui.lengthValue.textContent = ui.lengthRange.value;
     });
 
+    ui.wordCountRange.addEventListener("input", () => {
+      ui.wordCountValue.textContent = ui.wordCountRange.value;
+    });
+
+    document.querySelectorAll(".preset").forEach((button) => {
+      button.addEventListener("click", () => applyPreset(button.dataset.preset));
+    });
+
+    ui.saveGeneratedButton.addEventListener("click", () => openCredentialDialog());
+  }
+
+  function bindVaultEvents() {
     ui.vaultStatusButton.addEventListener("click", () => {
       document.querySelector("#vault").scrollIntoView({
         behavior: "smooth",
@@ -782,9 +1023,7 @@
       openMasterDialog(state.settings ? "unlock" : "setup");
     });
 
-    ui.closeMasterDialog.addEventListener("click", () => {
-      ui.masterDialog.close();
-    });
+    ui.closeMasterDialog.addEventListener("click", () => ui.masterDialog.close());
 
     ui.masterForm.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -812,37 +1051,22 @@
 
         ui.masterDialog.close();
       } catch (error) {
-        ui.masterError.textContent =
-          error.message || "Operazione non riuscita.";
+        ui.masterError.textContent = error.message || "Operazione non riuscita.";
         ui.masterError.classList.remove("hidden");
       }
     });
 
-    ui.lockVaultButton.addEventListener("click", () => {
-      lockVault();
-    });
-
+    ui.lockVaultButton.addEventListener("click", () => lockVault());
     ui.searchInput.addEventListener("input", renderCredentials);
+    ui.addCredentialButton.addEventListener("click", () => openCredentialDialog());
 
-    ui.addCredentialButton.addEventListener("click", () => {
-      openCredentialDialog();
-    });
-
-    ui.closeCredentialDialog.addEventListener("click", () => {
-      ui.credentialDialog.close();
-    });
-
-    ui.cancelCredentialButton.addEventListener("click", () => {
-      ui.credentialDialog.close();
-    });
+    ui.closeCredentialDialog.addEventListener("click", () => ui.credentialDialog.close());
+    ui.cancelCredentialButton.addEventListener("click", () => ui.credentialDialog.close());
 
     ui.showCredentialPasswordButton.addEventListener("click", () => {
       const visible = ui.credentialPasswordInput.type === "text";
-
       ui.credentialPasswordInput.type = visible ? "password" : "text";
-      ui.showCredentialPasswordButton.textContent = visible
-        ? "Mostra"
-        : "Nascondi";
+      ui.showCredentialPasswordButton.textContent = visible ? "Mostra" : "Nascondi";
     });
 
     ui.credentialForm.addEventListener("submit", saveCredential);
@@ -856,17 +1080,13 @@
         const credential = state.credentials.find((item) => item.id === copyId);
 
         if (credential) {
-          await copyToClipboard(
-            credential.password,
-            "Password copiata dal vault."
-          );
+          await copyToClipboard(credential.password, "Password copiata dal vault.");
           resetLockTimer();
         }
       }
 
       if (editId) {
         const credential = state.credentials.find((item) => item.id === editId);
-
         if (credential) openCredentialDialog(credential);
       }
 
@@ -893,19 +1113,16 @@
       }
 
       if (!window.crypto?.subtle) {
-        throw new Error(
-          "Apri il sito da Vercel tramite HTTPS per usare la cifratura."
-        );
+        throw new Error("Apri il sito tramite HTTPS per usare la cifratura.");
       }
 
       await openDatabase();
       state.settings = await loadSettings();
 
-      generatePassword();
+      bindGeneratorEvents();
+      bindVaultEvents();
       updateVaultInterface();
-      bindEvents();
-
-      fetch("/api/health").catch(() => {});
+      generatePassword();
     } catch (error) {
       showToast(error.message || "Impossibile avviare l'app.", "error");
     }
