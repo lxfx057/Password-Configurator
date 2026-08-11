@@ -4,10 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#000000" />
-  <meta
-    name="description"
-    content="Password Configurator: genera e conserva password nel tuo vault locale."
-  />
+  <meta name="description" content="Generatore e vault password locale." />
   <title>Password Configurator</title>
 
   <link rel="stylesheet" href="./style.css" />
@@ -29,9 +26,10 @@
 
     <section class="hero">
       <p class="eyebrow">PRIVATE · ON YOUR DEVICE</p>
-      <h1>Password sicure.<br />Senza complicazioni.</h1>
+      <h1>Password come vuoi.<br />Sicure davvero.</h1>
       <p>
-        Crea password casuali e salvale nel tuo vault locale protetto.
+        Personalizza il generatore, copia il risultato e salva le credenziali
+        nel vault cifrato del browser.
       </p>
     </section>
 
@@ -47,44 +45,176 @@
         </button>
       </div>
 
+      <div class="mode-selector" role="tablist" aria-label="Tipo generatore">
+        <button class="mode-button active" id="randomModeButton" type="button" data-mode="random">
+          Casuale
+        </button>
+        <button class="mode-button" id="phraseModeButton" type="button" data-mode="phrase">
+          Passphrase
+        </button>
+      </div>
+
       <div class="password-output-box">
         <output id="generatedPassword" class="generated-password" aria-live="polite">
           Caricamento…
         </output>
 
-        <button class="button button-secondary" id="copyGeneratedButton" type="button">
-          Copia
-        </button>
+        <div class="output-actions">
+          <button class="icon-copy-button" id="copyGeneratedButton" type="button">
+            Copia
+          </button>
+          <button class="icon-copy-button" id="showGeneratedButton" type="button">
+            Mostra
+          </button>
+        </div>
       </div>
 
-      <div class="generator-options">
-        <div class="length-control">
-          <div class="option-heading">
-            <label for="lengthRange">Lunghezza</label>
-            <output id="lengthValue">20</output>
-          </div>
+      <div class="strength-card">
+        <div class="strength-top">
+          <span>Robustezza</span>
+          <strong id="strengthLabel">—</strong>
+        </div>
+        <div class="strength-track">
+          <span id="strengthBar"></span>
+        </div>
+        <p id="strengthDescription">Configura le opzioni per creare una password.</p>
+      </div>
 
-          <input id="lengthRange" type="range" min="8" max="64" value="20" />
+      <div id="randomOptions">
+        <div class="preset-row" aria-label="Preset password">
+          <button class="preset active" type="button" data-preset="balanced">Bilanciata</button>
+          <button class="preset" type="button" data-preset="easy">Facile</button>
+          <button class="preset" type="button" data-preset="strong">Molto sicura</button>
         </div>
 
-        <div class="toggles">
-          <label class="toggle-row">
-            <span>Maiuscole</span>
-            <input id="uppercaseToggle" type="checkbox" checked />
-            <span class="switch"></span>
-          </label>
+        <div class="settings-grid">
+          <div class="setting-card full-width">
+            <div class="setting-heading">
+              <label for="lengthRange">Lunghezza</label>
+              <output id="lengthValue">20</output>
+            </div>
+            <input id="lengthRange" type="range" min="8" max="64" value="20" />
+          </div>
 
-          <label class="toggle-row">
-            <span>Numeri</span>
-            <input id="numbersToggle" type="checkbox" checked />
-            <span class="switch"></span>
-          </label>
+          <div class="setting-card">
+            <p class="setting-title">Caratteri</p>
 
-          <label class="toggle-row">
-            <span>Simboli</span>
-            <input id="symbolsToggle" type="checkbox" checked />
-            <span class="switch"></span>
-          </label>
+            <label class="toggle-row">
+              <span>Maiuscole</span>
+              <input id="uppercaseToggle" type="checkbox" checked />
+              <span class="switch"></span>
+            </label>
+
+            <label class="toggle-row">
+              <span>Minuscole</span>
+              <input id="lowercaseToggle" type="checkbox" checked />
+              <span class="switch"></span>
+            </label>
+
+            <label class="toggle-row">
+              <span>Numeri</span>
+              <input id="numbersToggle" type="checkbox" checked />
+              <span class="switch"></span>
+            </label>
+
+            <label class="toggle-row">
+              <span>Simboli</span>
+              <input id="symbolsToggle" type="checkbox" checked />
+              <span class="switch"></span>
+            </label>
+          </div>
+
+          <div class="setting-card">
+            <p class="setting-title">Opzioni</p>
+
+            <label class="toggle-row">
+              <span>Evita caratteri simili</span>
+              <input id="ambiguousToggle" type="checkbox" checked />
+              <span class="switch"></span>
+            </label>
+
+            <label class="toggle-row">
+              <span>Inizia con una lettera</span>
+              <input id="startLetterToggle" type="checkbox" />
+              <span class="switch"></span>
+            </label>
+
+            <label class="field-label" for="excludeInput">Escludi caratteri</label>
+            <input
+              id="excludeInput"
+              type="text"
+              autocomplete="off"
+              placeholder="Esempio: @#%"
+              maxlength="40"
+            />
+          </div>
+
+          <div class="setting-card full-width prefix-grid">
+            <div>
+              <label class="field-label" for="prefixInput">Prefisso</label>
+              <input
+                id="prefixInput"
+                type="text"
+                autocomplete="off"
+                placeholder="Opzionale"
+                maxlength="20"
+              />
+            </div>
+
+            <div>
+              <label class="field-label" for="suffixInput">Suffisso</label>
+              <input
+                id="suffixInput"
+                type="text"
+                autocomplete="off"
+                placeholder="Opzionale"
+                maxlength="20"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden" id="phraseOptions">
+        <div class="settings-grid">
+          <div class="setting-card">
+            <div class="setting-heading">
+              <label for="wordCountRange">Numero parole</label>
+              <output id="wordCountValue">4</output>
+            </div>
+            <input id="wordCountRange" type="range" min="3" max="8" value="4" />
+
+            <label class="field-label" for="separatorSelect">Separatore</label>
+            <select id="separatorSelect">
+              <option value="-">Trattino —</option>
+              <option value=".">Punto .</option>
+              <option value="_">Trattino basso _</option>
+              <option value=" ">Spazio</option>
+              <option value="">Nessuno</option>
+            </select>
+          </div>
+
+          <div class="setting-card">
+            <p class="setting-title">Opzioni passphrase</p>
+
+            <label class="toggle-row">
+              <span>Prima parola maiuscola</span>
+              <input id="capitalizePhraseToggle" type="checkbox" checked />
+              <span class="switch"></span>
+            </label>
+
+            <label class="toggle-row">
+              <span>Aggiungi un numero</span>
+              <input id="phraseNumberToggle" type="checkbox" checked />
+              <span class="switch"></span>
+            </label>
+
+            <label class="toggle-row">
+              <span>Aggiungi simbolo</span>
+              <input id="phraseSymbolToggle" type="checkbox" />
+              <span class="switch"></span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -153,9 +283,7 @@
 
   <dialog class="dialog" id="masterDialog">
     <form id="masterForm">
-      <button class="dialog-close" id="closeMasterDialog" type="button" aria-label="Chiudi">
-        ×
-      </button>
+      <button class="dialog-close" id="closeMasterDialog" type="button" aria-label="Chiudi">×</button>
 
       <p class="section-label" id="masterKicker">PROTEZIONE LOCALE</p>
       <h2 id="masterTitle">Crea il vault</h2>
@@ -164,23 +292,11 @@
       </p>
 
       <label for="masterPasswordInput">Master password</label>
-      <input
-        id="masterPasswordInput"
-        type="password"
-        minlength="10"
-        autocomplete="new-password"
-        required
-      />
+      <input id="masterPasswordInput" type="password" minlength="10" autocomplete="new-password" required />
 
       <div id="masterConfirmationGroup">
         <label for="confirmMasterPasswordInput">Conferma master password</label>
-        <input
-          id="confirmMasterPasswordInput"
-          type="password"
-          minlength="10"
-          autocomplete="new-password"
-          required
-        />
+        <input id="confirmMasterPasswordInput" type="password" minlength="10" autocomplete="new-password" required />
       </div>
 
       <p class="form-error hidden" id="masterError"></p>
@@ -193,9 +309,7 @@
 
   <dialog class="dialog" id="credentialDialog">
     <form id="credentialForm">
-      <button class="dialog-close" id="closeCredentialDialog" type="button" aria-label="Chiudi">
-        ×
-      </button>
+      <button class="dialog-close" id="closeCredentialDialog" type="button" aria-label="Chiudi">×</button>
 
       <p class="section-label">CREDENZIALE</p>
       <h2 id="credentialDialogTitle">Salva password</h2>
@@ -203,30 +317,14 @@
       <input id="credentialIdInput" type="hidden" />
 
       <label for="serviceInput">Servizio</label>
-      <input
-        id="serviceInput"
-        type="text"
-        placeholder="Esempio: GitHub"
-        autocomplete="off"
-        required
-      />
+      <input id="serviceInput" type="text" placeholder="Esempio: GitHub" autocomplete="off" required />
 
       <label for="usernameInput">Username o email</label>
-      <input
-        id="usernameInput"
-        type="text"
-        placeholder="nome@email.com"
-        autocomplete="username"
-      />
+      <input id="usernameInput" type="text" placeholder="nome@email.com" autocomplete="username" />
 
       <label for="credentialPasswordInput">Password</label>
       <div class="password-field">
-        <input
-          id="credentialPasswordInput"
-          type="password"
-          autocomplete="new-password"
-          required
-        />
+        <input id="credentialPasswordInput" type="password" autocomplete="new-password" required />
         <button class="show-password-button" id="showCredentialPasswordButton" type="button">
           Mostra
         </button>
@@ -239,9 +337,7 @@
         <button class="button button-secondary" id="cancelCredentialButton" type="button">
           Annulla
         </button>
-        <button class="button button-primary" type="submit">
-          Salva
-        </button>
+        <button class="button button-primary" type="submit">Salva</button>
       </div>
     </form>
   </dialog>
