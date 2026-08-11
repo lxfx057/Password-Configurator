@@ -4,36 +4,37 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#000000" />
-  <meta name="description" content="Generatore e vault password locale." />
-  <title>Password Configurator</title>
-
+  <meta
+    name="description"
+    content="Generatore password con file cifrato compatibile con PC, iPhone e Android."
+  />
+  <title>Password File</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 
 <body>
   <main class="app">
     <header class="topbar">
-      <a class="brand" href="./" aria-label="Password Configurator">
+      <a class="brand" href="./" aria-label="Password File">
         <span class="brand-icon">⌘</span>
-        <span>Password Configurator</span>
+        <span>Password File</span>
       </a>
 
-      <button class="vault-status" id="vaultStatusButton" type="button">
-        <span class="status-dot"></span>
-        <span id="vaultStatusText">Vault</span>
+      <button class="header-button" id="openFileButton" type="button">
+        Apri file
       </button>
     </header>
 
     <section class="hero">
-      <p class="eyebrow">PRIVATE · ON YOUR DEVICE</p>
-      <h1>Password come vuoi.<br />Sicure davvero.</h1>
+      <p class="eyebrow">OFFLINE · FILE CIFRATO</p>
+      <h1>Genera. Salva.<br />Porta con te.</h1>
       <p>
-        Personalizza il generatore, copia il risultato e salva le credenziali
-        nel vault cifrato del browser.
+        Le tue password vengono salvate solo in un file cifrato,
+        protetto dalla password che scegli tu.
       </p>
     </section>
 
-    <section class="panel generator-panel">
+    <section class="panel">
       <div class="panel-header">
         <div>
           <p class="section-label">GENERA</p>
@@ -45,26 +46,18 @@
         </button>
       </div>
 
-      <div class="mode-selector" role="tablist" aria-label="Tipo generatore">
-        <button class="mode-button active" id="randomModeButton" type="button" data-mode="random">
-          Casuale
-        </button>
-        <button class="mode-button" id="phraseModeButton" type="button" data-mode="phrase">
-          Passphrase
-        </button>
-      </div>
-
       <div class="password-output-box">
         <output id="generatedPassword" class="generated-password" aria-live="polite">
           Caricamento…
         </output>
 
         <div class="output-actions">
-          <button class="icon-copy-button" id="copyGeneratedButton" type="button">
+          <button class="small-button" id="copyGeneratedButton" type="button">
             Copia
           </button>
-          <button class="icon-copy-button" id="showGeneratedButton" type="button">
-            Mostra
+
+          <button class="small-button" id="showGeneratedButton" type="button">
+            Nascondi
           </button>
         </div>
       </div>
@@ -74,258 +67,183 @@
           <span>Robustezza</span>
           <strong id="strengthLabel">—</strong>
         </div>
+
         <div class="strength-track">
           <span id="strengthBar"></span>
         </div>
-        <p id="strengthDescription">Configura le opzioni per creare una password.</p>
+
+        <p id="strengthDescription">Generazione password in corso.</p>
       </div>
 
-      <div id="randomOptions">
-        <div class="preset-row" aria-label="Preset password">
-          <button class="preset active" type="button" data-preset="balanced">Bilanciata</button>
-          <button class="preset" type="button" data-preset="easy">Facile</button>
-          <button class="preset" type="button" data-preset="strong">Molto sicura</button>
-        </div>
+      <div class="preset-row">
+        <button class="preset active" type="button" data-preset="balanced">
+          Bilanciata
+        </button>
 
-        <div class="settings-grid">
-          <div class="setting-card full-width">
-            <div class="setting-heading">
-              <label for="lengthRange">Lunghezza</label>
-              <output id="lengthValue">20</output>
-            </div>
-            <input id="lengthRange" type="range" min="8" max="64" value="20" />
-          </div>
+        <button class="preset" type="button" data-preset="easy">
+          Facile da digitare
+        </button>
 
-          <div class="setting-card">
-            <p class="setting-title">Caratteri</p>
-
-            <label class="toggle-row">
-              <span>Maiuscole</span>
-              <input id="uppercaseToggle" type="checkbox" checked />
-              <span class="switch"></span>
-            </label>
-
-            <label class="toggle-row">
-              <span>Minuscole</span>
-              <input id="lowercaseToggle" type="checkbox" checked />
-              <span class="switch"></span>
-            </label>
-
-            <label class="toggle-row">
-              <span>Numeri</span>
-              <input id="numbersToggle" type="checkbox" checked />
-              <span class="switch"></span>
-            </label>
-
-            <label class="toggle-row">
-              <span>Simboli</span>
-              <input id="symbolsToggle" type="checkbox" checked />
-              <span class="switch"></span>
-            </label>
-          </div>
-
-          <div class="setting-card">
-            <p class="setting-title">Opzioni</p>
-
-            <label class="toggle-row">
-              <span>Evita caratteri simili</span>
-              <input id="ambiguousToggle" type="checkbox" checked />
-              <span class="switch"></span>
-            </label>
-
-            <label class="toggle-row">
-              <span>Inizia con una lettera</span>
-              <input id="startLetterToggle" type="checkbox" />
-              <span class="switch"></span>
-            </label>
-
-            <label class="field-label" for="excludeInput">Escludi caratteri</label>
-            <input
-              id="excludeInput"
-              type="text"
-              autocomplete="off"
-              placeholder="Esempio: @#%"
-              maxlength="40"
-            />
-          </div>
-
-          <div class="setting-card full-width prefix-grid">
-            <div>
-              <label class="field-label" for="prefixInput">Prefisso</label>
-              <input
-                id="prefixInput"
-                type="text"
-                autocomplete="off"
-                placeholder="Opzionale"
-                maxlength="20"
-              />
-            </div>
-
-            <div>
-              <label class="field-label" for="suffixInput">Suffisso</label>
-              <input
-                id="suffixInput"
-                type="text"
-                autocomplete="off"
-                placeholder="Opzionale"
-                maxlength="20"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="hidden" id="phraseOptions">
-        <div class="settings-grid">
-          <div class="setting-card">
-            <div class="setting-heading">
-              <label for="wordCountRange">Numero parole</label>
-              <output id="wordCountValue">4</output>
-            </div>
-            <input id="wordCountRange" type="range" min="3" max="8" value="4" />
-
-            <label class="field-label" for="separatorSelect">Separatore</label>
-            <select id="separatorSelect">
-              <option value="-">Trattino —</option>
-              <option value=".">Punto .</option>
-              <option value="_">Trattino basso _</option>
-              <option value=" ">Spazio</option>
-              <option value="">Nessuno</option>
-            </select>
-          </div>
-
-          <div class="setting-card">
-            <p class="setting-title">Opzioni passphrase</p>
-
-            <label class="toggle-row">
-              <span>Prima parola maiuscola</span>
-              <input id="capitalizePhraseToggle" type="checkbox" checked />
-              <span class="switch"></span>
-            </label>
-
-            <label class="toggle-row">
-              <span>Aggiungi un numero</span>
-              <input id="phraseNumberToggle" type="checkbox" checked />
-              <span class="switch"></span>
-            </label>
-
-            <label class="toggle-row">
-              <span>Aggiungi simbolo</span>
-              <input id="phraseSymbolToggle" type="checkbox" />
-              <span class="switch"></span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <button class="button button-primary save-password-button" id="saveGeneratedButton" type="button">
-        Salva nel vault
-      </button>
-    </section>
-
-    <section class="panel vault-panel" id="vault">
-      <div class="panel-header">
-        <div>
-          <p class="section-label">VAULT</p>
-          <h2>Credenziali salvate</h2>
-        </div>
-
-        <button class="button button-secondary hidden" id="lockVaultButton" type="button">
-          Blocca
+        <button class="preset" type="button" data-preset="strong">
+          Molto sicura
         </button>
       </div>
 
-      <div class="vault-locked" id="vaultLocked">
-        <div class="vault-lock-icon">🔒</div>
-        <h3 id="vaultLockedTitle">Crea il tuo vault</h3>
-        <p id="vaultLockedText">
-          Imposta una master password: le credenziali resteranno cifrate localmente nel browser.
-        </p>
-        <button class="button button-primary" id="openVaultButton" type="button">
-          Inizia
-        </button>
-      </div>
+      <div class="settings-grid">
+        <div class="setting-card full-width">
+          <div class="setting-heading">
+            <label for="lengthRange">Lunghezza</label>
+            <output id="lengthValue">20</output>
+          </div>
 
-      <div class="vault-unlocked hidden" id="vaultUnlocked">
-        <div class="vault-toolbar">
-          <input
-            id="searchInput"
-            type="search"
-            placeholder="Cerca una credenziale"
-            autocomplete="off"
-          />
-
-          <button class="button button-secondary" id="addCredentialButton" type="button">
-            Aggiungi
-          </button>
+          <input id="lengthRange" type="range" min="8" max="64" value="20" />
         </div>
 
-        <div class="credential-list" id="credentialList"></div>
+        <div class="setting-card">
+          <p class="setting-title">Caratteri</p>
 
-        <div class="backup-actions">
-          <button class="backup-button" id="exportBackupButton" type="button">
-            Esporta backup
-          </button>
-
-          <label class="backup-button" for="importBackupInput">
-            Importa backup
+          <label class="toggle-row">
+            <span>Maiuscole</span>
+            <input id="uppercaseToggle" type="checkbox" checked />
+            <span class="switch"></span>
           </label>
 
-          <input id="importBackupInput" type="file" accept=".json,application/json" hidden />
+          <label class="toggle-row">
+            <span>Minuscole</span>
+            <input id="lowercaseToggle" type="checkbox" checked />
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <span>Numeri</span>
+            <input id="numbersToggle" type="checkbox" checked />
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <span>Simboli</span>
+            <input id="symbolsToggle" type="checkbox" checked />
+            <span class="switch"></span>
+          </label>
+        </div>
+
+        <div class="setting-card">
+          <p class="setting-title">Compatibilità</p>
+
+          <label class="toggle-row">
+            <span>Evita caratteri simili</span>
+            <input id="ambiguousToggle" type="checkbox" checked />
+            <span class="switch"></span>
+          </label>
+
+          <label class="toggle-row">
+            <span>Inizia con una lettera</span>
+            <input id="startLetterToggle" type="checkbox" />
+            <span class="switch"></span>
+          </label>
+
+          <label class="field-label" for="excludeInput">
+            Escludi caratteri
+          </label>
+
+          <input
+            id="excludeInput"
+            type="text"
+            placeholder="Esempio: @#%"
+            autocomplete="off"
+            maxlength="40"
+          />
         </div>
       </div>
     </section>
 
+    <section class="panel file-panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-label">FILE PERSONALE</p>
+          <h2>Archivio password</h2>
+        </div>
+
+        <span class="file-state" id="fileState">Nessun file aperto</span>
+      </div>
+
+      <p class="file-description" id="fileDescription">
+        Aggiungi le password che vuoi e scarica un file cifrato. Per leggerlo
+        di nuovo basta caricarlo qui e inserire la stessa password.
+      </p>
+
+      <div class="file-actions">
+        <button class="button button-primary" id="addPasswordButton" type="button">
+          Aggiungi password generata
+        </button>
+
+        <button class="button button-secondary" id="addManualButton" type="button">
+          Aggiungi manualmente
+        </button>
+      </div>
+
+      <div class="password-list" id="passwordList"></div>
+
+      <button class="button button-primary download-button" id="downloadFileButton" type="button">
+        Crea e scarica file cifrato
+      </button>
+
+      <p class="file-note">
+        Il file non contiene password leggibili. Conserva con cura la password
+        del file: non può essere recuperata.
+      </p>
+    </section>
+
+    <input
+      id="openFileInput"
+      type="file"
+      accept=".pconf,application/json"
+      hidden
+    />
+
     <footer>
-      Tutti i dati restano sul tuo dispositivo. Nessun account richiesto.
+      Funziona nel browser: nessun account, nessun server, nessun dato inviato.
     </footer>
   </main>
 
-  <dialog class="dialog" id="masterDialog">
-    <form id="masterForm">
-      <button class="dialog-close" id="closeMasterDialog" type="button" aria-label="Chiudi">×</button>
-
-      <p class="section-label" id="masterKicker">PROTEZIONE LOCALE</p>
-      <h2 id="masterTitle">Crea il vault</h2>
-      <p class="dialog-description" id="masterDescription">
-        La master password non viene salvata e non può essere recuperata.
-      </p>
-
-      <label for="masterPasswordInput">Master password</label>
-      <input id="masterPasswordInput" type="password" minlength="10" autocomplete="new-password" required />
-
-      <div id="masterConfirmationGroup">
-        <label for="confirmMasterPasswordInput">Conferma master password</label>
-        <input id="confirmMasterPasswordInput" type="password" minlength="10" autocomplete="new-password" required />
-      </div>
-
-      <p class="form-error hidden" id="masterError"></p>
-
-      <button class="button button-primary dialog-submit" id="masterSubmitButton" type="submit">
-        Crea vault
+  <dialog class="dialog" id="passwordDialog">
+    <form id="passwordForm">
+      <button class="dialog-close" id="closePasswordDialog" type="button" aria-label="Chiudi">
+        ×
       </button>
-    </form>
-  </dialog>
 
-  <dialog class="dialog" id="credentialDialog">
-    <form id="credentialForm">
-      <button class="dialog-close" id="closeCredentialDialog" type="button" aria-label="Chiudi">×</button>
+      <p class="section-label">PASSWORD</p>
+      <h2 id="passwordDialogTitle">Aggiungi password</h2>
 
-      <p class="section-label">CREDENZIALE</p>
-      <h2 id="credentialDialogTitle">Salva password</h2>
+      <input id="entryIdInput" type="hidden" />
 
-      <input id="credentialIdInput" type="hidden" />
-
-      <label for="serviceInput">Servizio</label>
-      <input id="serviceInput" type="text" placeholder="Esempio: GitHub" autocomplete="off" required />
+      <label for="serviceInput">Nome servizio</label>
+      <input
+        id="serviceInput"
+        type="text"
+        placeholder="Esempio: Instagram"
+        autocomplete="off"
+        required
+      />
 
       <label for="usernameInput">Username o email</label>
-      <input id="usernameInput" type="text" placeholder="nome@email.com" autocomplete="username" />
+      <input
+        id="usernameInput"
+        type="text"
+        placeholder="nome@email.com"
+        autocomplete="username"
+      />
 
-      <label for="credentialPasswordInput">Password</label>
+      <label for="entryPasswordInput">Password</label>
       <div class="password-field">
-        <input id="credentialPasswordInput" type="password" autocomplete="new-password" required />
-        <button class="show-password-button" id="showCredentialPasswordButton" type="button">
+        <input
+          id="entryPasswordInput"
+          type="password"
+          autocomplete="new-password"
+          required
+        />
+
+        <button class="show-field-button" id="showEntryPasswordButton" type="button">
           Mostra
         </button>
       </div>
@@ -334,11 +252,83 @@
       <textarea id="notesInput" rows="3" placeholder="Opzionale"></textarea>
 
       <div class="dialog-actions">
-        <button class="button button-secondary" id="cancelCredentialButton" type="button">
+        <button class="button button-secondary" id="cancelPasswordButton" type="button">
           Annulla
         </button>
-        <button class="button button-primary" type="submit">Salva</button>
+
+        <button class="button button-primary" type="submit">
+          Salva
+        </button>
       </div>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="encryptDialog">
+    <form id="encryptForm">
+      <button class="dialog-close" id="closeEncryptDialog" type="button" aria-label="Chiudi">
+        ×
+      </button>
+
+      <p class="section-label">PROTEGGI IL FILE</p>
+      <h2>Crea password file</h2>
+
+      <p class="dialog-description">
+        Questa password protegge il file scaricato. Non viene salvata nel sito
+        e non può essere recuperata.
+      </p>
+
+      <label for="filePasswordInput">Password del file</label>
+      <input
+        id="filePasswordInput"
+        type="password"
+        minlength="10"
+        autocomplete="new-password"
+        required
+      />
+
+      <label for="confirmFilePasswordInput">Conferma password del file</label>
+      <input
+        id="confirmFilePasswordInput"
+        type="password"
+        minlength="10"
+        autocomplete="new-password"
+        required
+      />
+
+      <p class="form-error hidden" id="encryptError"></p>
+
+      <button class="button button-primary dialog-submit" type="submit">
+        Scarica file cifrato
+      </button>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="unlockDialog">
+    <form id="unlockForm">
+      <button class="dialog-close" id="closeUnlockDialog" type="button" aria-label="Chiudi">
+        ×
+      </button>
+
+      <p class="section-label">APRI FILE</p>
+      <h2>Sblocca archivio</h2>
+
+      <p class="dialog-description" id="selectedFileName">
+        Inserisci la password usata quando hai creato questo file.
+      </p>
+
+      <label for="unlockPasswordInput">Password del file</label>
+      <input
+        id="unlockPasswordInput"
+        type="password"
+        autocomplete="current-password"
+        required
+      />
+
+      <p class="form-error hidden" id="unlockError"></p>
+
+      <button class="button button-primary dialog-submit" type="submit">
+        Apri file
+      </button>
     </form>
   </dialog>
 
