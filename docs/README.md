@@ -1,50 +1,59 @@
+# 🔐 Password Configurator
 
-# Installation Guide
+A private, local-first password tool for generating, analyzing, testing and securely saving credentials.
 
-This document explains how to install and run **Password Creator with Forum** locally.
+## ✨ Features
 
-## 🧰 Requirements
+- 🎲 Secure password generator powered by `crypto.getRandomValues()`
+- 📊 Live password analysis with score, entropy estimate and practical suggestions
+- ✅ Requirement tester for length, uppercase, lowercase, numbers, symbols and forbidden characters
+- 🔒 Local encrypted vault using AES-GCM
+- 🗝️ Master password key derivation with PBKDF2
+- 💾 Encrypted credential storage in IndexedDB
+- 📦 Encrypted JSON backup export and import
+- 📴 No account, backend, tracker or cloud database
+- 📱 Responsive macOS-inspired interface
 
-- A modern web browser (Chrome, Firefox, Edge, etc.)
-- Git (optional, for cloning the repository)
-- No backend or database required — it's a static frontend project
+## 🛡️ Privacy
 
-## 📦 Steps
+Passwords are generated and analyzed entirely in the browser.
 
-**1. Clone the repository**
+Saved credentials are encrypted with AES-GCM before being stored in IndexedDB. The master password is never stored and cannot be recovered.
 
-```bash
-git clone https://github.com/lxfx05/Password.git
-cd Password
+## 🚀 Run locally
+
+No installation is required.
+
+1. Download or clone this repository
+2. Keep all files in the same folder
+3. Open `index.html` in a modern browser
+
+For the best browser support, deploy it with GitHub Pages or Vercel.
+
+## 🌐 Deploy on Vercel
+
+1. Import the GitHub repository into Vercel
+2. Leave the framework preset as `Other`
+3. Do not add a build command
+4. Deploy
+
+The project is static, so Vercel will serve `index.html` directly.
+
+## 📁 Project files
+
+```text
+index.html            Main interface
+styles.css            macOS-inspired UI
+app.js                Generator, analyzer, tester and interface logic
+crypto.js             PBKDF2 and AES-GCM utilities
+vault.js              IndexedDB storage layer
+manifest.webmanifest  Progressive web app metadata
+favicon.svg           App icon
 ```
 
-Alternatively, download the ZIP from GitHub and extract it.
+## ⚠️ Important
 
-*2. Open the app*
-
-You can open any of the following HTML files directly in your browser:
-
-- `index.html` — homepage
-- `Analyzer.html` — password strength analyzer
-- `Generator.html` — password generator
-- `Forum.html` — user input-based password creation
-
-
-Make sure `Wayland.css` is in the same folder as the HTML files.
-
-*🌐 Online Preview*
-
-You can also use the hosted version here:
-👉 [password-creator-teal.vercel.app](https://password-seven-pink.vercel.app/)
-
----
-
-- If you have a new idea or find any issues, please fill up the [Request](https://github.com/lxfx05/Password/issues)
-
----
-
-Enjoy building and customizing your own password creationinterface
-
-# Disclaimer ⚠️
-
-Any ur data filled in forim to vrate password is sexure and i not see or share that 
+- Use a unique and long master password.
+- Do not forget the master password: it cannot be recovered.
+- Keep encrypted backup files in a safe place.
+- This tool does not protect a compromised device, malicious browser extensions or malware.
