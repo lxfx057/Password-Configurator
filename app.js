@@ -1,114 +1,106 @@
 (() => {
-  const DB_NAME = "password-configurator";
+  const DB_NAME = "password-configurator-vault";
   const DB_VERSION = 1;
-  const SETTINGS_STORE = "settings";
-  const CREDENTIALS_STORE = "credentials";
+  const SETTINGS = "settings";
+  const CREDENTIALS = "credentials";
 
-  const CHARSETS = {
-    uppercase: "ABCDEFGHJKLMNPQRSTUVWXYZ",
-    lowercase: "abcdefghijkmnopqrstuvwxyz",
-    numbers: "23456789",
-    symbols: "!@#$%^&*+-_=?."
-  };
+  const UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const LOWER = "abcdefghijkmnopqrstuvwxyz";
+  const NUMBERS = "23456789";
+  const SYMBOLS = "!@#$%^&*+-_=?.";
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
 
   const state = {
-    database: null,
+    db: null,
     settings: null,
     key: null,
-    credentials: [],
-    masterMode: "setup",
+    items: [],
+    dialogMode: "setup",
     inactivityTimer: null
   };
 
   const $ = (selector) => document.querySelector(selector);
 
-  const elements = {
-    generatedPassword: $("#generatedPassword"),
-    regenerateButton: $("#regenerateButton"),
-    copyGeneratedButton: $("#copyGeneratedButton"),
-    saveGeneratedButton: $("#saveGeneratedButton"),
-    lengthInput: $("#lengthInput"),
-    lengthOutput: $("#lengthOutput"),
-    uppercaseInput: $("#uppercaseInput"),
-    lowercaseInput: $("#lowercaseInput"),
-    numbersInput: $("#numbersInput"),
-    symbolsInput: $("#symbolsInput"),
-    ambiguousInput: $("#ambiguousInput"),
+  const ui = {
+    password: $("#generatedPassword"),
+    length: $("#lengthInput"),
+    lengthValue: $("#lengthValue"),
+    uppercase: $("#uppercaseInput"),
+    numbers: $("#numbersInput"),
+    symbols: $("#symbolsInput"),
+    regenerate: $("#regenerateButton"),
+    copy: $("#copyButton"),
+    save: $("#saveButton"),
 
-    vaultStatus: $("#vaultStatus"),
-    vaultStatusText: $("#vaultStatusText"),
-    lockButton: $("#lockButton"),
-    addCredentialButton: $("#addCredentialButton"),
-    vaultLocked: $("#vaultLocked"),
-    vaultUnlocked: $("#vaultUnlocked"),
-    vaultTitle: $("#vaultTitle"),
-    vaultDescription: $("#vaultDescription"),
-    openVaultButton: $("#openVaultButton"),
-    searchInput: $("#searchInput"),
-    credentialsList: $("#credentialsList"),
-    exportButton: $("#exportButton"),
-    importInput: $("#importInput"),
+    vaultButton: $("#vaultButton"),
+    vaultButtonText: $("#vaultButtonText"),
+    lock: $("#lockButton"),
+    vaultLocked: $("#vaultLockedView"),
+    vaultOpen: $("#vaultOpenView"),
+    vaultTitle: $("#vaultStateTitle"),
+    vaultText: $("#vaultStateText"),
+    openVault: $("#openVaultButton"),
+    search: $("#searchInput"),
+    list: $("#credentialList"),
+    add: $("#addButton"),
+    export: $("#exportButton"),
+    import: $("#importInput"),
 
     masterDialog: $("#masterDialog"),
     masterForm: $("#masterForm"),
-    masterDialogLabel: $("#masterDialogLabel"),
-    masterDialogTitle: $("#masterDialogTitle"),
-    masterDialogText: $("#masterDialogText"),
-    masterPasswordInput: $("#masterPasswordInput"),
-    masterConfirmGroup: $("#masterConfirmGroup"),
-    masterConfirmInput: $("#masterConfirmInput"),
+    masterLabel: $("#masterLabel"),
+    masterTitle: $("#masterTitle"),
+    masterDescription: $("#masterDescription"),
+    masterInput: $("#masterInput"),
+    masterConfirmWrap: $("#masterConfirmWrap"),
+    masterConfirm: $("#masterConfirmInput"),
+    masterSubmit: $("#masterSubmit"),
     masterError: $("#masterError"),
-    masterSubmitButton: $("#masterSubmitButton"),
-    masterCloseButton: $("#masterCloseButton"),
+    closeMaster: $("#closeMasterDialog"),
 
     credentialDialog: $("#credentialDialog"),
     credentialForm: $("#credentialForm"),
-    credentialDialogTitle: $("#credentialDialogTitle"),
-    credentialIdInput: $("#credentialIdInput"),
-    credentialNameInput: $("#credentialNameInput"),
-    credentialUsernameInput: $("#credentialUsernameInput"),
-    credentialPasswordInput: $("#credentialPasswordInput"),
-    credentialNotesInput: $("#credentialNotesInput"),
-    credentialShowButton: $("#credentialShowButton"),
-    credentialCloseButton: $("#credentialCloseButton"),
-    credentialCancelButton: $("#credentialCancelButton"),
+    credentialTitle: $("#credentialTitle"),
+    credentialId: $("#credentialId"),
+    service: $("#serviceInput"),
+    username: $("#usernameInput"),
+    credentialPassword: $("#passwordInput"),
+    notes: $("#notesInput"),
+    showPassword: $("#showPasswordButton"),
+    closeCredential: $("#closeCredentialDialog"),
+    cancelCredential: $("#cancelCredentialButton"),
 
     confirmDialog: $("#confirmDialog"),
     confirmTitle: $("#confirmTitle"),
-    confirmText: $("#confirmText"),
-    confirmButton: $("#confirmButton"),
+    confirmMessage: $("#confirmMessage"),
+    confirmAction: $("#confirmAction"),
 
-    toastArea: $("#toastArea")
+    toasts: $("#toastContainer")
   };
 
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-
-  function showToast(message, type = "") {
-    const toast = document.createElement("div");
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    elements.toastArea.append(toast);
-
-    window.setTimeout(() => toast.remove(), 3200);
+  function toast(message, type = "") {
+    const item = document.createElement("div");
+    item.className = `toast ${type}`;
+    item.textContent = message;
+    ui.toasts.append(item);
+    setTimeout(() => item.remove(), 3200);
   }
 
   function bytesToBase64(bytes) {
-    let result = "";
-
+    let value = "";
     bytes.forEach((byte) => {
-      result += String.fromCharCode(byte);
+      value += String.fromCharCode(byte);
     });
-
-    return btoa(result);
+    return btoa(value);
   }
 
-  function base64ToBytes(base64) {
-    const text = atob(base64);
+  function base64ToBytes(value) {
+    const text = atob(value);
     const bytes = new Uint8Array(text.length);
 
-    for (let index = 0; index < text.length; index += 1) {
-      bytes[index] = text.charCodeAt(index);
+    for (let i = 0; i < text.length; i += 1) {
+      bytes[i] = text.charCodeAt(i);
     }
 
     return bytes;
@@ -121,43 +113,36 @@
   }
 
   function randomIndex(max) {
-    const maxAllowed = Math.floor(256 / max) * max;
-    const byte = new Uint8Array(1);
+    const limit = Math.floor(256 / max) * max;
+    const bytes = new Uint8Array(1);
 
     do {
-      crypto.getRandomValues(byte);
-    } while (byte[0] >= maxAllowed);
+      crypto.getRandomValues(bytes);
+    } while (bytes[0] >= limit);
 
-    return byte[0] % max;
+    return bytes[0] % max;
   }
 
-  function secureShuffle(items) {
-    const copy = [...items];
+  function shuffle(values) {
+    const result = [...values];
 
-    for (let index = copy.length - 1; index > 0; index -= 1) {
-      const newIndex = randomIndex(index + 1);
-      [copy[index], copy[newIndex]] = [copy[newIndex], copy[index]];
+    for (let i = result.length - 1; i > 0; i -= 1) {
+      const j = randomIndex(i + 1);
+      [result[i], result[j]] = [result[j], result[i]];
     }
 
-    return copy;
+    return result;
   }
 
   function generatePassword() {
-    const groups = [];
+    const groups = [LOWER];
 
-    if (elements.uppercaseInput.checked) groups.push(CHARSETS.uppercase);
-    if (elements.lowercaseInput.checked) groups.push(CHARSETS.lowercase);
-    if (elements.numbersInput.checked) groups.push(CHARSETS.numbers);
-    if (elements.symbolsInput.checked) groups.push(CHARSETS.symbols);
+    if (ui.uppercase.checked) groups.push(UPPER);
+    if (ui.numbers.checked) groups.push(NUMBERS);
+    if (ui.symbols.checked) groups.push(SYMBOLS);
 
-    if (!groups.length) {
-      groups.push(CHARSETS.lowercase);
-      elements.lowercaseInput.checked = true;
-    }
-
-    const requestedLength = Number(elements.lengthInput.value);
-    const length = Math.max(requestedLength, groups.length);
-    const pool = groups.join("");
+    const length = Math.max(Number(ui.length.value), groups.length);
+    const all = groups.join("");
     const password = [];
 
     groups.forEach((group) => {
@@ -165,75 +150,31 @@
     });
 
     while (password.length < length) {
-      password.push(pool[randomIndex(pool.length)]);
+      password.push(all[randomIndex(all.length)]);
     }
 
-    elements.generatedPassword.textContent = secureShuffle(password).join("");
-    elements.lengthOutput.textContent = String(length);
+    ui.password.textContent = shuffle(password).join("");
+    ui.lengthValue.textContent = String(length);
   }
 
-  function applyPreset(name) {
-    document.querySelectorAll(".preset").forEach((button) => {
-      button.classList.toggle("active", button.dataset.preset === name);
-    });
-
-    if (name === "balanced") {
-      elements.lengthInput.value = 20;
-      elements.uppercaseInput.checked = true;
-      elements.lowercaseInput.checked = true;
-      elements.numbersInput.checked = true;
-      elements.symbolsInput.checked = true;
-      elements.ambiguousInput.checked = true;
-    }
-
-    if (name === "easy") {
-      elements.lengthInput.value = 18;
-      elements.uppercaseInput.checked = true;
-      elements.lowercaseInput.checked = true;
-      elements.numbersInput.checked = true;
-      elements.symbolsInput.checked = false;
-      elements.ambiguousInput.checked = true;
-    }
-
-    if (name === "maximum") {
-      elements.lengthInput.value = 32;
-      elements.uppercaseInput.checked = true;
-      elements.lowercaseInput.checked = true;
-      elements.numbersInput.checked = true;
-      elements.symbolsInput.checked = true;
-      elements.ambiguousInput.checked = false;
-    }
-
-    generatePassword();
-  }
-
-  async function copyText(text, message) {
-    try {
-      await navigator.clipboard.writeText(text);
-      showToast(message, "success");
-    } catch {
-      showToast("Il browser ha bloccato la copia.", "error");
-    }
-  }
-
-  function openDatabase() {
+  function openDb() {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onupgradeneeded = () => {
-        const database = request.result;
+        const db = request.result;
 
-        if (!database.objectStoreNames.contains(SETTINGS_STORE)) {
-          database.createObjectStore(SETTINGS_STORE, { keyPath: "key" });
+        if (!db.objectStoreNames.contains(SETTINGS)) {
+          db.createObjectStore(SETTINGS, { keyPath: "key" });
         }
 
-        if (!database.objectStoreNames.contains(CREDENTIALS_STORE)) {
-          database.createObjectStore(CREDENTIALS_STORE, { keyPath: "id" });
+        if (!db.objectStoreNames.contains(CREDENTIALS)) {
+          db.createObjectStore(CREDENTIALS, { keyPath: "id" });
         }
       };
 
       request.onsuccess = () => {
-        state.database = request.result;
+        state.db = request.result;
         resolve();
       };
 
@@ -241,62 +182,54 @@
     });
   }
 
-  function requestPromise(request) {
+  function requestAsPromise(request) {
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
   }
 
-  function store(name, mode = "readonly") {
-    return state.database.transaction(name, mode).objectStore(name);
+  function objectStore(name, mode = "readonly") {
+    return state.db.transaction(name, mode).objectStore(name);
   }
 
   async function getSettings() {
-    const record = await requestPromise(store(SETTINGS_STORE).get("vault"));
+    const record = await requestAsPromise(objectStore(SETTINGS).get("vault"));
     return record ? record.value : null;
   }
 
-  async function saveSettings(value) {
-    await requestPromise(
-      store(SETTINGS_STORE, "readwrite").put({
-        key: "vault",
-        value
-      })
+  async function putSettings(value) {
+    return requestAsPromise(
+      objectStore(SETTINGS, "readwrite").put({ key: "vault", value })
     );
   }
 
-  async function getRecords() {
-    return requestPromise(store(CREDENTIALS_STORE).getAll());
+  async function getAllRecords() {
+    return requestAsPromise(objectStore(CREDENTIALS).getAll());
   }
 
-  async function saveRecord(record) {
-    return requestPromise(store(CREDENTIALS_STORE, "readwrite").put(record));
+  async function putRecord(record) {
+    return requestAsPromise(objectStore(CREDENTIALS, "readwrite").put(record));
   }
 
-  async function removeRecord(id) {
-    return requestPromise(store(CREDENTIALS_STORE, "readwrite").delete(id));
+  async function deleteRecord(id) {
+    return requestAsPromise(objectStore(CREDENTIALS, "readwrite").delete(id));
   }
 
-  async function clearDatabase() {
+  async function clearVaultDatabase() {
     return new Promise((resolve, reject) => {
-      const transaction = state.database.transaction(
-        [SETTINGS_STORE, CREDENTIALS_STORE],
-        "readwrite"
-      );
-
-      transaction.objectStore(SETTINGS_STORE).clear();
-      transaction.objectStore(CREDENTIALS_STORE).clear();
-
-      transaction.oncomplete = resolve;
-      transaction.onerror = () => reject(transaction.error);
+      const tx = state.db.transaction([SETTINGS, CREDENTIALS], "readwrite");
+      tx.objectStore(SETTINGS).clear();
+      tx.objectStore(CREDENTIALS).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
     });
   }
 
-  async function deriveKey(password, salt) {
-    const baseKey = await crypto.subtle.importKey(
+  async function deriveKey(masterPassword, saltBase64) {
+    const passwordKey = await crypto.subtle.importKey(
       "raw",
-      encoder.encode(password),
+      encoder.encode(masterPassword),
       "PBKDF2",
       false,
       ["deriveKey"]
@@ -305,11 +238,11 @@
     return crypto.subtle.deriveKey(
       {
         name: "PBKDF2",
-        salt: base64ToBytes(salt),
+        salt: base64ToBytes(saltBase64),
         iterations: 310000,
         hash: "SHA-256"
       },
-      baseKey,
+      passwordKey,
       {
         name: "AES-GCM",
         length: 256
@@ -319,12 +252,12 @@
     );
   }
 
-  async function encrypt(text, key) {
+  async function encrypt(value, key) {
     const iv = randomBytes(12);
     const encrypted = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv },
       key,
-      encoder.encode(text)
+      encoder.encode(value)
     );
 
     return {
@@ -334,22 +267,19 @@
   }
 
   async function decrypt(payload, key) {
-    const value = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: base64ToBytes(payload.iv)
-      },
+    const result = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: base64ToBytes(payload.iv) },
       key,
       base64ToBytes(payload.data)
     );
 
-    return decoder.decode(value);
+    return decoder.decode(result);
   }
 
-  async function createVault(password) {
+  async function createVault(masterPassword) {
     const salt = bytesToBase64(randomBytes(16));
-    const key = await deriveKey(password, salt);
-    const verification = await encrypt("password-configurator-verification", key);
+    const key = await deriveKey(masterPassword, salt);
+    const verification = await encrypt("password-vault-ok", key);
 
     state.settings = {
       version: 1,
@@ -358,179 +288,449 @@
       createdAt: new Date().toISOString()
     };
 
-    await saveSettings(state.settings);
+    await putSettings(state.settings);
     state.key = key;
-    state.credentials = [];
-
-    updateVaultInterface();
-    renderCredentials();
-    resetInactivityTimer();
-    showToast("Vault cifrato creato.", "success");
+    state.items = [];
+    updateVaultUi();
+    renderList();
+    resetTimer();
+    toast("Vault creato e cifrato.", "success");
   }
 
-  async function unlockVault(password) {
-    const key = await deriveKey(password, state.settings.salt);
-    const verification = await decrypt(state.settings.verification, key);
+  async function unlockVault(masterPassword) {
+    const key = await deriveKey(masterPassword, state.settings.salt);
+    const result = await decrypt(state.settings.verification, key);
 
-    if (verification !== "password-configurator-verification") {
+    if (result !== "password-vault-ok") {
       throw new Error("Master password non corretta.");
     }
 
     state.key = key;
-    await loadCredentials();
-    updateVaultInterface();
-    renderCredentials();
-    resetInactivityTimer();
-    showToast("Vault sbloccato.", "success");
+    await loadItems();
+    updateVaultUi();
+    renderList();
+    resetTimer();
+    toast("Vault sbloccato.", "success");
   }
 
-  function lockVault(showMessage = true) {
-    state.key = null;
-    state.credentials = [];
-    clearTimeout(state.inactivityTimer);
-    updateVaultInterface();
-
-    if (showMessage) {
-      showToast("Vault bloccato.", "success");
-    }
-  }
-
-  function resetInactivityTimer() {
-    if (!state.key) return;
-
-    clearTimeout(state.inactivityTimer);
-
-    state.inactivityTimer = window.setTimeout(() => {
-      lockVault(false);
-      showToast("Vault bloccato dopo 5 minuti di inattività.");
-    }, 5 * 60 * 1000);
-  }
-
-  async function loadCredentials() {
-    const records = await getRecords();
-    const credentials = [];
+  async function loadItems() {
+    const records = await getAllRecords();
+    const items = [];
 
     for (const record of records) {
       try {
-        const content = await decrypt(record.payload, state.key);
-        credentials.push(JSON.parse(content));
+        items.push(JSON.parse(await decrypt(record.payload, state.key)));
       } catch {
-        showToast("Una credenziale non può essere letta.", "error");
+        toast("Non è stato possibile leggere una credenziale.", "error");
       }
     }
 
-    state.credentials = credentials.sort((first, second) =>
-      first.name.localeCompare(second.name, "it")
-    );
+    state.items = items.sort((a, b) => a.service.localeCompare(b.service, "it"));
   }
 
-  function updateVaultInterface() {
+  function lockVault(message = true) {
+    state.key = null;
+    state.items = [];
+    clearTimeout(state.inactivityTimer);
+    updateVaultUi();
+
+    if (message) toast("Vault bloccato.", "success");
+  }
+
+  function resetTimer() {
+    if (!state.key) return;
+
+    clearTimeout(state.inactivityTimer);
+    state.inactivityTimer = setTimeout(() => {
+      lockVault(false);
+      toast("Vault bloccato per inattività.");
+    }, 5 * 60 * 1000);
+  }
+
+  function updateVaultUi() {
     const unlocked = Boolean(state.key);
 
-    elements.vaultStatus.classList.toggle("unlocked", unlocked);
-    elements.vaultStatusText.textContent = unlocked ? "Vault sbloccato" : "Vault bloccato";
-    elements.lockButton.disabled = !unlocked;
-    elements.addCredentialButton.disabled = !unlocked;
-
-    elements.vaultLocked.classList.toggle("hidden", unlocked);
-    elements.vaultUnlocked.classList.toggle("hidden", !unlocked);
+    ui.vaultButton.classList.toggle("unlocked", unlocked);
+    ui.vaultButtonText.textContent = unlocked ? "Sbloccato" : "Vault";
+    ui.lock.classList.toggle("hidden", !unlocked);
+    ui.vaultLocked.classList.toggle("hidden", unlocked);
+    ui.vaultOpen.classList.toggle("hidden", !unlocked);
 
     if (!unlocked) {
-      const exists = Boolean(state.settings);
+      const hasVault = Boolean(state.settings);
 
-      elements.vaultTitle.textContent = exists
-        ? "Sblocca il vault locale"
-        : "Configura il vault locale";
+      ui.vaultTitle.textContent = hasVault
+        ? "Sblocca il tuo vault"
+        : "Configura il tuo vault";
 
-      elements.vaultDescription.textContent = exists
-        ? "Inserisci la master password per leggere le credenziali cifrate su questo dispositivo."
-        : "Crea una master password per cifrare le credenziali salvate su questo dispositivo.";
+      ui.vaultText.textContent = hasVault
+        ? "Inserisci la master password per accedere alle credenziali cifrate."
+        : "Imposta una master password per salvare credenziali cifrate in locale.";
 
-      elements.openVaultButton.textContent = exists ? "Sblocca vault" : "Configura vault";
+      ui.openVaultButton.textContent = hasVault ? "Sblocca" : "Inizia";
     }
   }
 
-  function showMasterDialog(mode) {
-    state.masterMode = mode;
-    elements.masterForm.reset();
-    elements.masterError.textContent = "";
-    elements.masterError.classList.add("hidden");
-
+  function openMasterDialog(mode) {
+    state.dialogMode = mode;
     const setup = mode === "setup";
 
-    elements.masterDialogLabel.textContent = setup
-      ? "CRITTOGRAFIA LOCALE"
-      : "SBLOCCA VAULT";
+    ui.masterForm.reset();
+    ui.masterError.textContent = "";
+    ui.masterError.classList.add("hidden");
 
-    elements.masterDialogTitle.textContent = setup
-      ? "Configura il vault"
-      : "Sblocca il vault";
+    ui.masterLabel.textContent = setup ? "PROTEZIONE LOCALE" : "SBLOCCA VAULT";
+    ui.masterTitle.textContent = setup ? "Crea il vault" : "Sblocca il vault";
+    ui.masterDescription.textContent = setup
+      ? "La master password protegge le credenziali. Non viene salvata e non può essere recuperata."
+      : "La master password viene usata solo in questo browser per decifrare il vault.";
 
-    elements.masterDialogText.textContent = setup
-      ? "La master password non viene salvata e non può essere recuperata."
-      : "La master password viene usata solo localmente per sbloccare le credenziali cifrate.";
+    ui.masterConfirmWrap.classList.toggle("hidden", !setup);
+    ui.masterConfirm.required = setup;
+    ui.masterInput.autocomplete = setup ? "new-password" : "current-password";
+    ui.masterSubmit.textContent = setup ? "Crea vault" : "Sblocca vault";
 
-    elements.masterConfirmGroup.classList.toggle("hidden", !setup);
-    elements.masterConfirmInput.required = setup;
-    elements.masterPasswordInput.autocomplete = setup ? "new-password" : "current-password";
-    elements.masterSubmitButton.textContent = setup ? "Crea vault cifrato" : "Sblocca vault";
-
-    elements.masterDialog.showModal();
-    window.setTimeout(() => elements.masterPasswordInput.focus(), 50);
+    ui.masterDialog.showModal();
+    setTimeout(() => ui.masterInput.focus(), 50);
   }
 
-  function showCredentialDialog(credential = null) {
+  function openCredentialDialog(item = null) {
     if (!state.key) {
-      showToast("Sblocca il vault prima di salvare.", "error");
+      toast("Prima sblocca il vault.", "error");
       return;
     }
 
-    elements.credentialForm.reset();
-    elements.credentialDialogTitle.textContent = credential ? "Modifica credenziale" : "Salva password";
-    elements.credentialIdInput.value = credential?.id ?? "";
-    elements.credentialNameInput.value = credential?.name ?? "";
-    elements.credentialUsernameInput.value = credential?.username ?? "";
-    elements.credentialPasswordInput.value = credential?.password ?? elements.generatedPassword.textContent;
-    elements.credentialNotesInput.value = credential?.notes ?? "";
-    elements.credentialPasswordInput.type = "password";
-    elements.credentialShowButton.textContent = "Mostra";
+    ui.credentialForm.reset();
+    ui.credentialTitle.textContent = item ? "Modifica credenziale" : "Salva password";
+    ui.credentialId.value = item?.id ?? "";
+    ui.service.value = item?.service ?? "";
+    ui.username.value = item?.username ?? "";
+    ui.credentialPassword.value = item?.password ?? ui.password.textContent;
+    ui.notes.value = item?.notes ?? "";
+    ui.credentialPassword.type = "password";
+    ui.showPassword.textContent = "Mostra";
 
-    elements.credentialDialog.showModal();
-    window.setTimeout(() => elements.credentialNameInput.focus(), 50);
+    ui.credentialDialog.showModal();
+    setTimeout(() => ui.service.focus(), 50);
   }
 
   async function saveCredential(event) {
     event.preventDefault();
 
-    const existingId = elements.credentialIdInput.value;
-    const name = elements.credentialNameInput.value.trim();
-    const username = elements.credentialUsernameInput.value.trim();
-    const password = elements.credentialPasswordInput.value;
-    const notes = elements.credentialNotesInput.value.trim();
+    const service = ui.service.value.trim();
+    const username = ui.username.value.trim();
+    const password = ui.credentialPassword.value;
+    const notes = ui.notes.value.trim();
+    const currentId = ui.credentialId.value;
 
-    if (!name || !password) {
-      showToast("Servizio e password sono obbligatori.", "error");
+    if (!service || !password) {
+      toast("Inserisci servizio e password.", "error");
       return;
     }
 
-    const existing = state.credentials.find((credential) => credential.id === existingId);
+    const previous = state.items.find((item) => item.id === currentId);
 
-    const credential = {
-      id: existing?.id ?? crypto.randomUUID(),
-      name,
+    const item = {
+      id: previous?.id ?? crypto.randomUUID(),
+      service,
       username,
       password,
       notes,
-      createdAt: existing?.createdAt ?? new Date().toISOString(),
+      createdAt: previous?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    const payload = await encrypt(JSON.stringify(credential), state.key);
+    const payload = await encrypt(JSON.stringify(item), state.key);
 
-    await saveRecord({
-      id: credential.id,
+    await putRecord({
+      id: item.id,
       payload,
-      updatedAt: credential.updatedAt
+      updatedAt: item.updatedAt
     });
 
-    c
+    const index = state.items.findIndex((saved) => saved.id === item.id);
+
+    if (index === -1) state.items.push(item);
+    else state.items[index] = item;
+
+    state.items.sort((a, b) => a.service.localeCompare(b.service, "it"));
+
+    ui.credentialDialog.close();
+    renderList();
+    resetTimer();
+    toast(previous ? "Credenziale aggiornata." : "Credenziale salvata.", "success");
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function renderList() {
+    if (!state.key) return;
+
+    const query = ui.search.value.trim().toLowerCase();
+
+    const filtered = state.items.filter((item) =>
+      `${item.service} ${item.username} ${item.notes}`.toLowerCase().includes(query)
+    );
+
+    if (!filtered.length) {
+      ui.list.innerHTML = `
+        <div class="empty-state">
+          ${query ? "Nessuna credenziale trovata." : "Ancora nessuna credenziale salvata."}
+        </div>
+      `;
+      return;
+    }
+
+    ui.list.innerHTML = filtered
+      .map(
+        (item) => `
+          <article class="credential">
+            <div>
+              <div class="credential-name">${escapeHtml(item.service)}</div>
+              <div class="credential-user">
+                ${escapeHtml(item.username || "Nessun username salvato")}
+              </div>
+            </div>
+
+            <div class="credential-actions">
+              <button class="small-action" type="button" data-copy="${item.id}">Copia</button>
+              <button class="small-action" type="button" data-edit="${item.id}">Modifica</button>
+              <button class="small-action delete" type="button" data-delete="${item.id}">Elimina</button>
+            </div>
+          </article>
+        `
+      )
+      .join("");
+  }
+
+  async function askConfirmation(title, message, actionText) {
+    ui.confirmTitle.textContent = title;
+    ui.confirmMessage.textContent = message;
+    ui.confirmAction.textContent = actionText;
+    ui.confirmDialog.showModal();
+
+    return new Promise((resolve) => {
+      ui.confirmDialog.addEventListener(
+        "close",
+        () => resolve(ui.confirmDialog.returnValue === "confirm"),
+        { once: true }
+      );
+    });
+  }
+
+  async function deleteItem(id) {
+    const item = state.items.find((saved) => saved.id === id);
+    if (!item) return;
+
+    const confirmed = await askConfirmation(
+      "Eliminare credenziale?",
+      `“${item.service}” verrà eliminata definitivamente dal vault locale.`,
+      "Elimina"
+    );
+
+    if (!confirmed) return;
+
+    await deleteRecord(id);
+    state.items = state.items.filter((saved) => saved.id !== id);
+    renderList();
+    resetTimer();
+    toast("Credenziale eliminata.", "success");
+  }
+
+  async function exportBackup() {
+    const records = await getAllRecords();
+
+    const backup = {
+      app: "Password Configurator",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      settings: state.settings,
+      credentials: records
+    };
+
+    const blob = new Blob([JSON.stringify(backup)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `password-vault-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+    resetTimer();
+    toast("Backup cifrato esportato.", "success");
+  }
+
+  async function importBackup(file) {
+    if (!file) return;
+
+    try {
+      const backup = JSON.parse(await file.text());
+
+      const valid =
+        backup?.app === "Password Configurator" &&
+        backup?.version === 1 &&
+        backup?.settings?.salt &&
+        backup?.settings?.verification &&
+        Array.isArray(backup?.credentials);
+
+      if (!valid) throw new Error("Backup non valido.");
+
+      const confirmed = await askConfirmation(
+        "Importare backup?",
+        "Il vault attuale su questo dispositivo verrà sostituito.",
+        "Importa"
+      );
+
+      if (!confirmed) return;
+
+      await clearVaultDatabase();
+      await putSettings(backup.settings);
+
+      for (const record of backup.credentials) {
+        await putRecord(record);
+      }
+
+      state.settings = backup.settings;
+      lockVault(false);
+      updateVaultUi();
+      toast("Backup importato. Ora sbloccalo con la sua master password.", "success");
+    } catch (error) {
+      toast(error.message || "Importazione non riuscita.", "error");
+    } finally {
+      ui.import.value = "";
+    }
+  }
+
+  function bindEvents() {
+    ui.regenerate.addEventListener("click", generatePassword);
+    ui.copy.addEventListener("click", () => copyPassword());
+
+    [ui.length, ui.uppercase, ui.numbers, ui.symbols].forEach((input) => {
+      input.addEventListener("input", generatePassword);
+      input.addEventListener("change", generatePassword);
+    });
+
+    ui.save.addEventListener("click", () => openCredentialDialog());
+    ui.add.addEventListener("click", () => openCredentialDialog());
+
+    ui.vaultButton.addEventListener("click", () => {
+      document.querySelector("#vaultSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    ui.openVault.addEventListener("click", () => {
+      openMasterDialog(state.settings ? "unlock" : "setup");
+    });
+
+    ui.closeMaster.addEventListener("click", () => ui.masterDialog.close());
+
+    ui.masterForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const password = ui.masterInput.value;
+      const confirmation = ui.masterConfirm.value;
+
+      try {
+        if (password.length < 10) {
+          throw new Error("Usa almeno 10 caratteri.");
+        }
+
+        if (state.dialogMode === "setup" && password !== confirmation) {
+          throw new Error("Le master password non coincidono.");
+        }
+
+        if (state.dialogMode === "setup") {
+          await createVault(password);
+        } else {
+          await unlockVault(password);
+        }
+
+        ui.masterDialog.close();
+      } catch (error) {
+        ui.masterError.textContent = error.message || "Operazione non riuscita.";
+        ui.masterError.classList.remove("hidden");
+      }
+    });
+
+    ui.lock.addEventListener("click", () => lockVault());
+    ui.search.addEventListener("input", renderList);
+    ui.export.addEventListener("click", exportBackup);
+    ui.import.addEventListener("change", (event) => importBackup(event.target.files[0]));
+
+    ui.closeCredential.addEventListener("click", () => ui.credentialDialog.close());
+    ui.cancelCredential.addEventListener("click", () => ui.credentialDialog.close());
+
+    ui.showPassword.addEventListener("click", () => {
+      const visible = ui.credentialPassword.type === "text";
+      ui.credentialPassword.type = visible ? "password" : "text";
+      ui.showPassword.textContent = visible ? "Mostra" : "Nascondi";
+    });
+
+    ui.credentialForm.addEventListener("submit", saveCredential);
+
+    ui.list.addEventListener("click", async (event) => {
+      const copyId = event.target.dataset.copy;
+      const editId = event.target.dataset.edit;
+      const deleteId = event.target.dataset.delete;
+
+      if (copyId) {
+        const item = state.items.find((saved) => saved.id === copyId);
+        if (item) {
+          await navigator.clipboard.writeText(item.password);
+          toast("Password copiata.", "success");
+          resetTimer();
+        }
+      }
+
+      if (editId) {
+        const item = state.items.find((saved) => saved.id === editId);
+        if (item) openCredentialDialog(item);
+      }
+
+      if (deleteId) {
+        await deleteItem(deleteId);
+      }
+    });
+
+    ["click", "keydown", "touchstart"].forEach((eventName) => {
+      document.addEventListener(eventName, resetTimer, { passive: true });
+    });
+  }
+
+  async function copyPassword() {
+    try {
+      await navigator.clipboard.writeText(ui.password.textContent);
+      toast("Password copiata.", "success");
+    } catch {
+      toast("Copia non consentita dal browser.", "error");
+    }
+  }
+
+  async function initialize() {
+    try {
+      if (!window.crypto?.subtle || !window.indexedDB) {
+        throw new Error("Il browser non supporta le funzioni locali richieste.");
+      }
+
+      await openDb();
+      state.settings = await getSettings();
+
+      updateVaultUi();
+      bindEvents();
+      generatePassword();
+    } catch (error) {
+      toast(error.message || "Impossibile avviare il vault.", "error");
+    }
+  }
+
+  initialize();
+})();
