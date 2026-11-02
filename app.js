@@ -39,6 +39,8 @@
     passwordList: $("#passwordList"),
     entryCount: $("#entryCount"),
     downloadFileButton: $("#downloadFileButton"),
+    importFileButton: $("#importFileButton"),
+    importFileInput: $("#importFileInput"),
 
     passwordDialog: $("#passwordDialog"),
     passwordForm: $("#passwordForm"),
@@ -476,7 +478,7 @@
         length: 256
       },
       false,
-      ["encrypt"]
+      ["encrypt", "decrypt"]
     );
   }
 
@@ -512,6 +514,87 @@
       iv: bytesToBase64(iv),
       data: bytesToBase64(new Uint8Array(encryptedData))
     };
+  }
+
+  async function decryptArchive(password, archive) {
+    if (
+      !archive ||
+      archive.format !== "Password File" ||
+      archive.version !== 1 ||
+      archive.algorithm !== "AES-256-GCM" ||
+      archive.kdf !== "PBKDF2-SHA-256" ||
+      !Number.isInteger(archive.iterations) ||
+      archive.iterations < 100000 ||
+      archive.iterations > 2000000 ||
+      typeof archive.salt !== "string" ||
+      typeof archive.iv !== "string" ||
+      typeof archive.data !== "string"
+    ) {
+      throw new Error("Unsupported or invalid encrypted file.");
+    }
+
+    const key = await deriveKey(password, archive.salt, archive.iterations);
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: base64ToBytes(archive.iv) },
+      key,
+      base64ToBytes(archive.data)
+    );
+    const payload = JSON.parse(new TextDecoder().decode(decrypted));
+    if (
+      payload?.app !== "Password File" ||
+      payload.version !== 1 ||
+      !Array.isArray(payload.entries)
+    ) {
+      throw new Error("The decrypted file has an invalid structure.");
+    }
+
+    return payload.entries.map((entry) => {
+      if (
+        !entry ||
+        typeof entry.service !== "string" ||
+        typeof entry.password !== "string"
+      ) {
+        throw new Error("The encrypted file contains an invalid password entry.");
+      }
+      return {
+        id: typeof entry.id === "string" ? entry.id : createId(),
+        service: entry.service.slice(0, 160),
+        username: typeof entry.username === "string" ? entry.username.slice(0, 320) : "",
+        password: entry.password,
+        notes: typeof entry.notes === "string" ? entry.notes.slice(0, 4000) : "",
+        updatedAt: typeof entry.updatedAt === "string" ? entry.updatedAt : new Date().toISOString()
+      };
+    });
+  }
+
+  async function importEncryptedFile(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Encrypted file is too large (5 MB maximum).", "error");
+      return;
+    }
+
+    const password = window.prompt("Enter the password used to encrypt this file:");
+    if (password === null) return;
+    if (!password) {
+      showToast("A file password is required.", "error");
+      return;
+    }
+
+    try {
+      const archive = JSON.parse(await file.text());
+      const importedEntries = await decryptArchive(password, archive);
+      if (state.entries.length && !window.confirm("Replace the current password list with the imported list?")) {
+        return;
+      }
+      state.entries = importedEntries;
+      renderEntries();
+      showToast(`Imported ${importedEntries.length} password(s).`, "success");
+    } catch {
+      showToast("Could not decrypt this file. Check the file and password.", "error");
+    }
   }
 
   function downloadFile(content, filename) {
@@ -653,6 +736,8 @@
     });
 
     ui.downloadFileButton.addEventListener("click", openEncryptDialog);
+    ui.importFileButton.addEventListener("click", () => ui.importFileInput.click());
+    ui.importFileInput.addEventListener("change", importEncryptedFile);
 
     ui.closeEncryptDialog.addEventListener("click", () => {
       ui.encryptDialog.close();
