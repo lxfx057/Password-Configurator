@@ -648,3 +648,13 @@ footer {
     flex-wrap: wrap;
   }
 }
+
+
+.file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.file-actions .button {
+  flex: 1 1 220px;
+}
