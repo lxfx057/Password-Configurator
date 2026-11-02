@@ -178,9 +178,15 @@
 
       <div class="password-list" id="passwordList"></div>
 
-      <button class="button button-primary download-button" id="downloadFileButton" type="button">
-        Save encrypted file
-      </button>
+      <div class="file-actions">
+        <button class="button button-primary download-button" id="downloadFileButton" type="button">
+          Save encrypted file
+        </button>
+        <button class="button button-secondary" id="importFileButton" type="button">
+          Import encrypted file
+        </button>
+        <input id="importFileInput" type="file" accept=".pconf,.json,application/json" hidden />
+      </div>
 
       <p class="file-note">
         Your file password is never stored. If you lose it, the encrypted file
